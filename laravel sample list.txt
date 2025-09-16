@@ -1,0 +1,3356 @@
+PHPフレームワーク Laravel入門
+
+
+掲載リスト
+
+
+リスト1-1
+Alias / "/xampp/htdocs/laravelapp/public/" 
+ 
+<Directory "/xampp/htdocs/laravelapp/public/">
+    Options Indexes FollowSymLinks MultiViews
+    AllowOverride all
+        Order allow,deny
+    Allow from all
+</Directory>
+
+
+リスト2-1
+<?php
+Route::get('/', function () {
+   return view('welcome');
+});
+
+
+リスト2-2
+<!doctype html>
+<html lang="{{ app()->getLocale() }}">
+    <head>
+        <meta charset="utf-8">
+        <meta http-equiv="X-UA-Compatible" content="IE=edge">
+        <meta name="viewport" content="width=device-width, initial-scale=1">
+
+        <title>Laravel</title>
+
+        <!-- Fonts -->
+        <link ……略……>
+
+        <!-- Styles -->
+        <style>
+            ……略……
+        </style>
+    </head>
+    <body>
+        <div class="flex-center position-ref full-height">
+            @if (Route::has('login'))
+                <div class="top-right links">
+                    @if (Auth::check())
+                        <a href="{{ url('/home') }}">Home</a>
+                    @else
+                        <a href="{{ url('/login') }}">Login</a>
+                        <a href="{{ url('/register') }}">Register</a>
+                    @endif
+                </div>
+            @endif
+
+            <div class="content">
+                <div class="title m-b-md">
+                    Laravel
+                </div>
+
+                <div class="links">
+                    ……略……
+                </div>
+            </div>
+        </div>
+    </body>
+</html>
+
+
+リスト2-3
+Route::get('hello',function () {
+   return '<html><body><h1>Hello</h1><p>This is sample page.</p></body></html>';
+});
+
+
+リスト2-4
+$html = <<<EOF
+<html>
+<head>
+<title>Hello</title>
+<style>
+body {font-size:16pt; color:#999; }
+h1 { font-size:100pt; text-align:right; color:#eee;
+   margin:-40px 0px -50px 0px; }
+</style>
+</head>
+<body>
+   <h1>Hello</h1>
+   <p>This is sample page.</p>
+   <p>これは、サンプルで作ったページです。</p>
+</body>
+</html>
+EOF;
+
+Route::get('hello',function () use ($html) {
+   return $html;
+});
+
+
+リスト2-5
+Route::get('hello/{msg}',function ($msg) {
+
+$html = <<<EOF
+<html>
+<head>
+<title>Hello</title>
+<style>
+body {font-size:16pt; color:#999; }
+h1 { font-size:100pt; text-align:right; color:#eee;
+   margin:-40px 0px -50px 0px; }
+</style>
+</head>
+<body>
+   <h1>Hello</h1>
+   <p>{$msg}</p>
+   <p>これは、サンプルで作ったページです。</p>
+</body>
+</html>
+EOF;
+
+   return $html;
+});
+
+
+リスト2-6
+<?php
+
+namespace App\Http\Controllers;
+
+use Illuminate\Http\Request;
+
+class HelloController extends Controller
+{
+   //
+}
+
+
+リスト2-7
+<?php
+
+namespace App\Http\Controllers;
+
+use Illuminate\Http\Request;
+
+class HelloController extends Controller
+{
+  
+   public function index() {
+
+       return <<<EOF
+<html>
+<head>
+<title>Hello/Index</title>
+<style>
+body {font-size:16pt; color:#999; }
+h1 { font-size:100pt; text-align:right; color:#eee;
+   margin:-40px 0px -50px 0px; }
+</style>
+</head>
+<body>
+   <h1>Index</h1>
+   <p>これは、Helloコントローラのindexアクションです。</p>
+</body>
+</html>
+EOF;
+
+   }
+}
+
+
+リスト2-8
+Route::get('hello', 'HelloController@index');
+
+
+リスト2-9
+class HelloController extends Controller
+{
+  
+   public function index($id='noname', $pass='unknown') {
+
+      return <<<EOF
+<html>
+<head>
+<title>Hello/Index</title>
+<style>
+body {font-size:16pt; color:#999; }
+h1 { font-size:100pt; text-align:right; color:#eee;
+   margin:-40px 0px -50px 0px; }
+</style>
+</head>
+<body>
+   <h1>Index</h1>
+   <p>これは、Helloコントローラのindexアクションです。</p>
+   <ul>
+       <li>ID: {$id}</li>
+       <li>PASS: {$pass}</li>
+   </ul>
+</body>
+</html>
+EOF;
+
+   }
+}
+
+
+リスト2-10
+Route::get('hello/{id?}/{pass?}', 'HelloController@index');
+
+
+リスト2-11
+global $head, $style, $body, $end;
+$head = '<html><head>';
+$style = <<<EOF
+<style>
+body {font-size:16pt; color:#999; }
+h1 { font-size:100pt; text-align:right; color:#eee;
+   margin:-40px 0px -50px 0px; }
+</style>
+EOF;
+$body = '</head><body>';
+$end = '</body></html>';
+
+function tag($tag, $txt) {
+   return "<{$tag}>" . $txt . "</{$tag}>";
+}
+
+class HelloController extends Controller
+{
+  
+   public function index() {
+       global $head, $style, $body, $end;
+      
+       $html = $head . tag('title','Hello/Index') . $style . $body
+           . tag('h1','Index') . tag('p','this is Index page')
+           . '<a href="/hello/other">go to Other page</a>'
+           . $end;
+       return $html;
+   }
+
+   public function other() {
+       global $head, $style, $body, $end;
+      
+       $html = $head . tag('title','Hello/Other') . $style . $body
+           . tag('h1','Other') . tag('p','this is Other page')
+           . $end;
+       return $html;
+   }
+
+}
+
+
+リスト2-12
+Route::get('hello', 'HelloController@index');
+Route::get('hello/other', 'HelloController@other');
+
+
+リスト2-13
+class HelloController extends Controller
+{
+  
+   public function __invoke() {
+
+     return <<<EOF
+<html>
+<head>
+<title>Hello</title>
+<style>
+body {font-size:16pt; color:#999; }
+h1 { font-size:30pt; text-align:right; color:#eee;
+  margin:-15px 0px 0px 0px; }
+</style>
+</head>
+<body>
+  <h1>Single Action</h1>
+  <p>これは、シングルアクションコントローラのアクションです。</p>
+</body>
+</html>
+EOF;
+
+   }
+
+}
+
+
+リスト2-14
+Route::get('hello', 'HelloController');
+
+
+リスト2-15
+<?php
+
+namespace App\Http\Controllers;
+
+use Illuminate\Http\Request;
+use Illuminate\Http\Response;
+
+class HelloController extends Controller
+{
+  
+   public function index(Request $request, Response $response) {
+
+$html = <<<EOF
+<html>
+<head>
+<title>Hello/Index</title>
+<style>
+body {font-size:16pt; color:#999; }
+h1 { font-size:120pt; text-align:right; color:#fafafa;
+  margin:-50px 0px -120px 0px; }
+</style>
+</head>
+<body>
+  <h1>Hello</h1>
+  <h3>Request</h3>
+  <pre>{$request}</pre>
+  <h3>Response</h3>
+  <pre>{$response}</pre>
+</body>
+</html>
+EOF;
+       $response->setContent($html);
+       return $response;
+   }
+
+}
+
+
+リスト2-16
+Route::get('hello', 'HelloController@index');
+
+
+リスト3-1
+<html>
+<head>
+   <title>Hello/Index</title>
+   <style>
+   body {font-size:16pt; color:#999; }
+   h1 { font-size:100pt; text-align:right; color:#f6f6f6;
+       margin:-50px 0px -100px 0px; }
+   </style>
+</head>
+<body>
+   <h1>Index</h1>
+   <p>This is a sample page with php-template.</p>
+</body>
+</html>
+
+
+リスト3-2
+Route::get('hello', function() {
+   return view('hello.index');
+});
+
+
+public function index()
+{
+   return view('hello.index');
+}
+
+
+リスト3-4
+Route::get('hello', 'HelloController@index');
+
+
+リスト3-5
+<body>
+   <h1>Index</h1>
+   <p><?php echo $msg; ?></p>
+   <p><?php echo date("Y年n月j日"); ?></p>
+</body>
+
+
+リスト3-6
+public function index()
+{
+   $data = ['msg'=>'これはコントローラから渡されたメッセージです。'];
+   return view('hello.index', $data);
+}
+
+
+リスト3-7
+<body>
+   <h1>Index</h1>
+   <p><?php echo $msg; ?></p>
+   <p>ID=<?php echo $id; ?></p>
+</body>
+
+
+リスト3-8
+public function index($id='zero')
+{
+   $data = [
+       'msg'=>'これはコントローラから渡されたメッセージです。',
+       'id'=>$id
+   ];
+   return view('hello.index', $data);
+}
+
+
+リスト3-9
+Route::get('hello/{id?}', 'HelloController@index');
+
+
+リスト3-10
+public function index(Request $request)
+{
+   $data = [
+       'msg'=>'これはコントローラから渡されたメッセージです。',
+       'id'=>$request->id
+   ];
+   return view('hello.index', $data);
+}
+
+
+リスト3-11
+Route::get('hello', 'HelloController@index');
+
+
+リスト3-12
+<html>
+<head>
+   <title>Hello/Index</title>
+   <style>
+   body {font-size:16pt; color:#999; }
+   h1 { font-size:50pt; text-align:right; color:#f6f6f6;
+       margin:-20px 0px -30px 0px; letter-spacing:-4pt; }
+   </style>
+</head>
+<body>
+   <h1>Blade/Index</h1>
+   <p>{{$msg}}</p>
+</body>
+</html>
+
+
+リスト3-13
+public function index()
+{
+   $data = [
+       'msg'=>'これはBladeを利用したサンプルです。',
+   ];
+   return view('hello.index', $data);
+}
+
+
+リスト3-14
+<body>
+   <h1>Blade/Index</h1>
+   <p>{{$msg}}</p>
+   <form method="POST" action="/hello">
+       {{ csrf_field() }}
+       <input type="text" name="msg">
+       <input type="submit">
+   </form>
+</body>
+
+
+リスト3-15
+class HelloController extends Controller
+{
+  
+   public function index()
+   {
+       $data = [
+           'msg'=>'お名前を入力下さい。',
+       ];
+       return view('hello.index', $data);
+   }
+
+   public function post(Request $request)
+   {
+       $msg = $request->msg;
+       $data = [
+           'msg'=>'こんにちは、' . $msg . 'さん！',
+       ];
+       return view('hello.index', $data);
+   }
+
+}
+
+
+リスト3-16
+Route::post('hello', 'HelloController@post');
+
+
+リスト3-17
+<body>
+   <h1>Blade/Index</h1>
+   @if ($msg != '')
+   <p>こんにちは、{{$msg}}さん。</p>
+   @else
+   <p>何か書いて下さい。</p>
+   @endif
+   <form method="POST" action="/hello">
+       {{ csrf_field() }}
+       <input type="text" name="msg">
+       <input type="submit">
+   </form>
+</body>
+
+
+リスト3-18
+class HelloController extends Controller
+{
+  
+   public function index()
+   {
+       return view('hello.index', ['msg'=>'']);
+   }
+
+   public function post(Request $request)
+   {
+       return view('hello.index', ['msg'=>$request->msg]);
+   }
+
+}
+
+
+リスト3-19
+<body>
+   <h1>Blade/Index</h1>
+   @isset ($msg)
+   <p>こんにちは、{{$msg}}さん。</p>
+   @else
+   <p>何か書いて下さい。</p>
+   @endisset
+   <form method="POST" action="/hello">
+       {{ csrf_field() }}
+       <input type="text" name="msg">
+       <input type="submit">
+   </form>
+</body>
+
+
+リスト3-20
+class HelloController extends Controller
+{
+  
+   public function index()
+   {
+       return view('hello.index');
+   }
+
+   public function post(Request $request)
+   {
+       return view('hello.index', ['msg'=>$request->msg]);
+   }
+
+}
+
+
+リスト3-21
+<body>
+   <h1>Blade/Index</h1>
+   <p>&#064;foreachディレクティブの例</p>
+   <ol>
+   @foreach($data as $item)
+   <li>{{$item}}
+   @endforeach
+   </ol>
+</body>
+
+
+リスト3-22
+public function index()
+{
+   $data = ['one', 'two', 'three', 'four', 'five'];
+   return view('hello.index', ['data'=>$data]);
+}
+
+
+リスト3-23
+<body>
+   <h1>Blade/Index</h1>
+   <p>&#064;forディレクティブの例</p>
+   <ol>
+   @for ($i = 1;$i < 100;$i++)
+   @if ($i % 2 == 1)
+       @continue
+   @elseif ($i <= 10)
+   <li>No, {{$i}}
+   @else
+       @break
+   @endif
+   @endfor
+   </ol>
+</body>
+
+
+リスト3-24
+<body>
+   <h1>Blade/Index</h1>
+   <p>&#064;forディレクティブの例</p>
+   @foreach ($data as $item)
+   @if ($loop->first)
+   <p>※データ一覧</p><ul>
+   @endif
+   <li>No,{{$loop->iteration}}. {{$item}}</li>
+   @if ($loop->last)
+   </ul><p>――ここまで</p>
+   @endif
+   @endforeach
+</body>
+
+
+リスト3-25
+<body>
+   <h1>Blade/Index</h1>
+   <p>&#064;whileディレクティブの例</p>
+   <ol>
+   @php
+   $counter = 0;
+   @endphp
+   @while ($counter < count($data))
+   <li>{{$data[$counter]}}</li>
+   @php
+   $counter++;
+   @endphp
+   @endwhile
+   </ol>
+</body>
+
+リスト3-26
+<html>
+<head>
+   <title>@yield('title')</title>
+   <style>
+   body {font-size:16pt; color:#999; margin: 5px; }
+   h1 { font-size:50pt; text-align:right; color:#f6f6f6;
+       margin:-20px 0px -30px 0px; letter-spacing:-4pt; }
+   ul { font-size:12pt; }
+   hr { margin: 25px 100px; border-top: 1px dashed #ddd; }
+   .menutitle {font-size:14pt; font-weight:bold; margin: 0px; }
+   .content {margin:10px; }
+   .footer { text-align:right; font-size:10pt; margin:10px;
+       border-bottom:solid 1px #ccc; color:#ccc; }
+   </style>
+</head>
+<body>
+   <h1>@yield('title')</h1>
+   @section('menubar')
+   <h2 class="menutitle">※メニュー</h2>
+   <ul>
+       <li>@show</li>
+   </ul>
+   <hr size="1">
+   <div class="content">
+   @yield('content')
+   </div>
+   <div class="footer">
+   @yield('footer')
+   </div>
+</body>
+</html>
+
+
+リスト3-27
+@extends('layouts.helloapp')
+
+@section('title', 'Index')
+
+@section('menubar')
+   @parent
+   インデックスページ
+@endsection
+
+@section('content')
+   <p>ここが本文のコンテンツです。</p>
+   <p>必要なだけ記述できます。</p>
+@endsection
+
+@section('footer')
+copyright 2017 tuyano.
+@endsection
+
+
+リスト3-28
+<style>
+.message { border:double 4px #ccc; margin:10px; padding:10px;
+   background-color:#fafafa; }
+.msg_title { margin:10px 20px; color:#999;
+   font-size:16pt; font-weight:bold; }
+.msg_content {margin:10px 20px; color:#aaa;
+   font-size:12pt; }
+</style>
+<div class="message">
+   <p class="msg_title">{{$msg_title}}</p>
+   <p class="msg_content">{{$msg_content}}</p>
+</div>
+
+
+リスト3-29
+@section('content')
+   <p>ここが本文のコンテンツです。</p>
+   <p>必要なだけ記述できます。</p>
+  
+   @component('components.message')
+       @slot('msg_title')
+       CAUTION!
+       @endslot
+
+       @slot('msg_content')
+       これはメッセージの表示です。
+       @endslot
+   @endcomponent
+
+@endsection
+
+
+リスト3-30
+@section('content')
+   <p>ここが本文のコンテンツです。</p>
+   <p>必要なだけ記述できます。</p>
+  
+   @include('components.message', ['msg_title'=>'OK', 
+      'msg_content'=>'サブビューです。'])
+
+@endsection
+
+
+リスト3-31
+<li>{{$item['name']}} [{{$item['mail']}}]</li>
+
+
+リスト3-32
+@section('content')
+   <p>ここが本文のコンテンツです。</p>
+   <ul>
+   @each('components.item', $data, 'item')
+   </ul>
+@endsection
+
+
+リスト3-33
+public function index()
+{
+   $data = [
+       ['name'=>'山田たろう', 'mail'=>'taro@yamada'],
+       ['name'=>'田中はなこ', 'mail'=>'hanako@flower'],
+       ['name'=>'鈴木さちこ', 'mail'=>'sachico@happy']
+   ];
+   return view('hello.index', ['data'=>$data]);
+}
+
+
+リスト3-34
+<?php
+
+namespace App\Providers;
+
+use Illuminate\Support\ServiceProvider;
+
+class HelloServiceProvider extends ServiceProvider
+{
+   public function boot()
+   {
+       //
+   }
+
+   public function register()
+   {
+       //
+   }
+}
+
+
+リスト3-35
+<?php
+namespace App\Providers;
+
+use Illuminate\Support\Facades\View;
+use Illuminate\Support\ServiceProvider;
+
+class HelloServiceProvider extends ServiceProvider
+{
+   public function boot()
+   {
+       View::composer(
+           'hello.index', function($view){
+               $view->with('view_message', 'composer message!');
+           }
+       );
+   }
+
+}
+
+
+リスト3-36
+App\Providers\HelloServiceProvider::Class
+
+
+リスト3-37
+@section('content')
+   <p>ここが本文のコンテンツです。</p>
+   <p>Controller value<br>'message' = {{$message}}</p>
+   <p>ViewComposer value<br>'view_message' = {{$view_message}}</p>
+@endsection
+
+
+リスト3-38
+public function index()
+{
+   return view('hello.index', ['message'=>'Hello!']);
+}
+
+
+リスト3-39
+<?php
+namespace App\Http\Composers;
+
+use Illuminate\View\View;
+
+class HelloComposer
+{
+  
+   public function compose(View $view)
+   {
+       $view->with('view_message', 'this view is "' 
+            . $view->getName() . '"!!');
+   }
+}
+
+
+リスト3-40
+public function boot()
+{
+   View::composer(
+       'hello.index', 'App\Http\Composers\HelloComposer'
+   );
+}
+
+
+リスト4-1
+<?php
+
+namespace App\Http\Middleware;
+
+use Closure;
+
+class HelloMiddleware
+{
+   public function handle($request, Closure $next)
+   {
+       return $next($request);
+   }
+}
+
+
+リスト4-2
+class HelloMiddleware
+{
+   public function handle($request, Closure $next)
+   {
+       $data = [
+           ['name'=>'taro', 'mail'=>'taro@yamada'],
+           ['name'=>'hanako', 'mail'=>'hanako@flower'],
+           ['name'=>'sachiko', 'mail'=>'sachico@happy'],
+       ];
+       $request->merge(['data'=>$data]);
+       return $next($request);
+   }
+}
+
+※ミドルウェア記述後、
+/app/Http/Kernel.php 内の$routeMiddleware 配列内に以下の文を追記。
+
+'hello' => \App\Http\Middleware\HelloMiddleware::class,
+
+
+リスト4-3
+// use App\Http\Middleware\HelloMiddleware;　を追記
+
+Route::get('hello', 'HelloController@index')
+   ->middleware(HelloMiddleware::class);
+
+
+リスト4-4
+public function index(Request $request)
+{
+   return view('hello.index', ['data'=>$request->data]);
+}
+
+
+リスト4-5
+@section('content')
+   <p>ここが本文のコンテンツです。</p>
+   <table>
+   @foreach($data as $item)
+   <tr><th>{{$item['name']}}</th><td>{{$item['mail']}}</td></tr>
+   @endforeach
+   </table>
+@endsection
+
+
+リスト4-6
+class HelloMiddleware
+{
+   public function handle($request, Closure $next)
+   {
+       $response = $next($request);
+       $content = $response->content();
+
+       $pattern = '/<middleware>(.*)<\/middleware>/i';
+       $replace = '<a href="http://$1">$1</a>';
+       $content = preg_replace($pattern, $replace, $content);
+
+       $response->setContent($content);
+       return $response;
+   }
+}
+
+
+リスト4-7
+@section('content')
+   <p>ここが本文のコンテンツです。</p>
+   <p>これは、<middleware>google.com</middleware>へのリンクです。</p>
+   <p>これは、<middleware>yahoo.co.jp</middleware>へのリンクです。</p>
+@endsection
+
+
+リスト4-8
+public function index(Request $request)
+{
+   return view('hello.index');
+}
+
+
+リスト4-9
+protected $middleware = [
+       \Illuminate\……略……\CheckForMaintenanceMode::class,
+       \Illuminate\……略……\ValidatePostSize::class,
+       ……以下略……
+];
+
+
+リスト4-10
+\App\Http\Middleware\HelloMiddleware::class,
+
+
+リスト4-11
+protected $middlewareGroups = [
+   'web' => [
+       ……ミドルウェアクラス……
+   ],
+
+   'api' => [
+       ……ミドルウェアクラス……
+   ],
+];
+
+
+リスト4-12
+'helo' => [
+   \App\Http\Middleware\HelloMiddleware::class,
+],
+
+
+リスト4-13
+Route::get('hello', 'HelloController@index')
+   ->middleware('helo');
+
+
+リスト4-14
+@section('content')
+   <p>{{$msg}}</p>
+   <table>
+   <form action="/hello" method="post">
+       {{ csrf_field() }}
+       <tr><th>name: </th><td><input type="text" 
+            name="name"></td></tr>
+       <tr><th>mail: </th><td><input type="text" 
+            name="mail"></td></tr>
+       <tr><th>age: </th><td><input type="text" 
+            name="age"></td></tr>
+       <tr><th></th><td><input type="submit" 
+            value="send"></td></tr>
+   </form>
+   </table>
+@endsection
+
+
+リスト4-15
+class HelloController extends Controller
+{
+  
+   public function index(Request $request)
+   {
+       return view('hello.index', ['msg'=>'フォームを入力：']);
+   }
+
+
+   public function post(Request $request)
+   {
+       $validate_rule = [
+           'name' => 'required',
+           'mail' => 'email',
+           'age' => 'numeric|between:0,150',
+       ];
+       $this->validate($request, $validate_rule);
+       return view('hello.index', ['msg'=>'正しく入力されました！']);
+   }
+
+}
+
+
+リスト4-16
+Route::get('hello', 'HelloController@index');
+Route::post('hello', 'HelloController@post');
+
+
+リスト4-17
+@section('content')
+   <p>{{$msg}}</p>
+   @if (count($errors) > 0)
+   <div>
+       <ul>
+           @foreach ($errors->all() as $error)
+               <li>{{ $error }}</li>
+           @endforeach
+       </ul>
+   </div>
+   @endif
+   <table>
+   <form action="/hello" method="post">
+       {{ csrf_field() }}
+       <tr><th>name: </th><td><input type="text" name="name"
+           value="{{old('name')}}"></td></tr>
+       <tr><th>mail: </th><td><input type="text" name="mail"
+           value="{{old('mail')}}"></td></tr>
+       <tr><th>age: </th><td><input type="text" name="age"
+           value="{{old('age')}}"></td></tr>
+       <tr><th></th><td><input type="submit" 
+           value="send"></td></tr>
+   </form>
+   </table>
+@endsection
+
+
+リスト4-18
+@section('content')
+   <p>{{$msg}}</p>
+   @if (count($errors) > 0)
+   <p>入力に問題があります。再入力して下さい。</p>
+   @endif
+   <table>
+   <form action="/hello" method="post">
+       {{ csrf_field() }}
+       @if ($errors->has('name'))
+       <tr><th>ERROR</th><td>{{$errors->first('name')}}</td></tr>
+       @endif
+       <tr><th>name: </th><td><input type="text" name="name"
+           value="{{old('name')}}"></td></tr>
+       @if ($errors->has('mail'))
+       <tr><th>ERROR</th><td>{{$errors->first('mail')}}</td></tr>
+       @endif
+       <tr><th>mail: </th><td><input type="text" name="mail"
+           value="{{old('mail')}}"></td></tr>
+       @if ($errors->has('age'))
+       <tr><th>ERROR</th><td>{{$errors->first('age')}}</td></tr>
+       @endif
+       <tr><th>age: </th><td><input type="text" name="age"
+           value="{{old('age')}}"></td></tr>
+       <tr><th></th><td><input type="submit" value="send"></td></tr>
+   </form>
+   </table>
+@endsection
+
+
+リスト4-19
+<?php
+
+namespace App\Http\Requests;
+
+use Illuminate\Foundation\Http\FormRequest;
+
+class HelloRequest extends FormRequest
+{
+   public function authorize()
+   {
+       return false;
+   }
+
+   public function rules()
+   {
+       return [
+           //
+       ];
+   }
+}
+
+
+リスト4-20
+class HelloRequest extends FormRequest
+{
+   public function authorize()
+   {
+       if ($this->path() ==  'hello')
+       {
+           return true;
+       } else {
+           return false;
+       }
+   }
+
+   public function rules()
+   {
+       return [
+           'name' => 'required',
+           'mail' => 'email',
+           'age' => 'numeric|between:0,150',
+       ];
+   }
+}
+
+
+リスト4-21
+// use App\Http\Requests\HelloRequest;　を追加しておく
+
+public function post(HelloRequest $request)
+{
+   return view('hello.index', ['msg'=>'正しく入力されました！']);
+}
+
+
+リスト4-22
+public function messages()
+{
+   return [
+       'name.required' => '名前は必ず入力して下さい。',
+       'mail.email'  => 'メールアドレスが必要です。',
+       'age.numeric' => '年齢を整数で記入下さい。',
+       'age.between' => '年齢は０～150の間で入力下さい。',
+   ];
+}
+
+
+リスト4-23
+// use Validator;　を追記しておく
+
+public function post(Request $request)
+{
+   $validator = Validator::make($request->all(), [
+       'name' => 'required',
+       'mail' => 'email',
+       'age' => 'numeric|between:0,150',
+   ]);
+   if ($validator->fails()) {
+       return redirect('/hello')
+                   ->withErrors($validator)
+                   ->withInput();
+   }
+   return view('hello.index', ['msg'=>'正しく入力されました！']);
+}
+
+
+リスト4-24
+public function index(Request $request)
+{
+   $validator = Validator::make($request->query(), [
+       'id' => 'required',
+       'pass' => 'required',
+   ]);
+   if ($validator->fails()) {
+       $msg = 'クエリーに問題があります。';
+   } else {
+       $msg = 'ID/PASSを受け付けました。フォームを入力下さい。';
+   }
+   return view('hello.index', ['msg'=>$msg, ]);
+}
+
+
+リスト4-25
+public function post(Request $request)
+{
+   $rules = [
+       'name' => 'required',
+       'mail' => 'email',
+       'age' => 'numeric|between:0,150',
+   ];
+   $messages = [
+       'name.required' => '名前は必ず入力して下さい。',
+       'mail.email'  => 'メールアドレスが必要です。',
+       'age.numeric' => '年齢を整数で記入下さい。',
+       'age.between' => '年齢は０～150の間で入力下さい。',
+   ];
+   $validator = Validator::make($request->all(), $rules, $messages);
+   if ($validator->fails()) {
+       return redirect('/hello')
+           ->withErrors($validator)
+           ->withInput();
+   }
+   return view('hello.index', ['msg'=>'正しく入力されました！']);
+}
+
+
+リスト4-26
+public function post(Request $request)
+{
+   $rules = [
+       'name' => 'required',
+       'mail' => 'email',
+       'age' => 'numeric',
+   ];
+   $messages = [
+       'name.required' => '名前は必ず入力して下さい。',
+       'mail.email'  => 'メールアドレスが必要です。',
+       'age.numeric' => '年齢は整数で記入下さい。',
+       'age.min' => '年齢はゼロ歳以上で記入下さい。',
+       'age.max' => '年齢は200歳以下で記入下さい。',
+   ];
+   $validator = Validator::make($request->all(), $rules, $messages);
+
+   $validator->sometimes('age', 'min:0', function($input){
+       return !is_int($input->age);
+   });
+   $validator->sometimes('age', 'max:200', function($input){
+       return !is_int($input->age);
+   });
+
+   if ($validator->fails()) {
+       return redirect('/hello')
+           ->withErrors($validator)
+           ->withInput();
+   }
+   return view('hello.index', ['msg'=>'正しく入力されました！']);
+}
+
+
+リスト4-27
+<?php
+namespace App\Http\Validators;
+
+use Illuminate\Validation\Validator;
+
+class HelloValidator extends Validator
+{
+   public function validateHello($attribute, $value, $parameters)
+   {
+       return $value % 2 == 0;
+   }
+
+}
+
+
+リスト4-28
+// use Validator;　追加する
+// use App\Http\Validators\HelloValidator;　追加する
+
+public function boot()
+{
+   $validator = $this->app['validator'];
+   $validator->resolver(function($translator, $data, 
+          $rules, $messages) {
+       return new HelloValidator($translator, $data, 
+             $rules, $messages);
+   });
+}
+
+
+リスト4-29
+class HelloRequest extends FormRequest
+{
+   public function authorize()
+   {
+       if ($this->path() ==  'hello')
+       {
+           return true;
+       } else {
+           return false;
+       }
+   }
+
+   public function rules()
+   {
+       return [
+           'name' => 'required',
+           'mail' => 'email',
+           'age' => 'numeric|hello',
+       ];
+   }
+
+   public function messages()
+   {
+       return [
+           'name.required' => '名前は必ず入力して下さい。',
+           'mail.email'  => 'メールアドレスが必要です。',
+           'age.numeric' => '年齢を整数で記入下さい。',
+           'age.hello' => 'Hello! 入力は偶数のみ受け付けます。',
+       ];
+   }
+
+}
+
+
+リスト4-30
+class HelloController extends Controller
+{
+  
+   public function index(Request $request)
+   {
+       return view('hello.index', ['msg'=>'フォームを入力下さい。']);
+   }
+
+   public function post(HelloRequest $request)
+   {
+       return view('hello.index', ['msg'=>'正しく入力されました！']);
+   }
+
+}
+
+
+リスト4-31
+public function boot()
+{
+   Validator::extend('hello', function($attribute, $value,
+           $parameters, $validator) {
+       return $value % 2 == 0;
+   });
+}
+
+
+リスト4-32
+protected $except = [
+   'hello',
+]
+
+
+リスト4-33
+@section('content')
+   <p>{{$msg}}</p>
+   @if (count($errors) > 0)
+   <p>入力に問題があります。再入力して下さい。</p>
+   @endif
+   <table>
+   <form action="/hello" method="post">
+       {{ csrf_field() }}
+       @if ($errors->has('msg'))
+       <tr><th>ERROR</th><td>{{$errors->first('msg')}}</td></tr>
+       @endif
+       <tr><th>Message: </th><td><input type="text" name="msg"
+           value="{{old('msg')}}"></td></tr>
+       <tr><th></th><td><input type="submit" value="send"></td></tr>
+   </form>
+   </table>
+@endsection
+
+
+リスト4-34
+class HelloController extends Controller
+{
+  
+   public function index(Request $request)
+   {
+       if ($request->hasCookie('msg'))
+       {
+           $msg = 'Cookie: ' . $request->cookie('msg');
+       } else {
+           $msg = '※クッキーはありません。';
+       }
+       return view('hello.index', ['msg'=> $msg]);
+   }
+
+   public function post(Request $request)
+   {
+       $validate_rule = [
+           'msg' => 'required',
+       ];
+       $this->validate($request, $validate_rule);
+       $msg = $request->msg;
+       $response = new Response(view('hello.index', ['msg'=>
+           '「' . $msg . '」をクッキーに保存しました。']));
+       $response->cookie('msg', $msg, 100);
+       return  $response;
+   }
+
+}
+
+
+リスト5-1
+CREATE TABLE `people` (
+	`id`	INTEGER PRIMARY KEY AUTOINCREMENT,
+	`name`	TEXT NOT NULL,
+	`mail`	TEXT,
+	`age`	INTEGER
+);
+
+
+リスト5-2
+INSERT INTO `people` VALUES (1,'taro','taro@yamada.jp',35);
+INSERT INTO `people` VALUES (2,'hanako','hanako@flower.com',24);
+INSERT INTO `people` VALUES (3,'sachiko','sachi@happy.org',47);
+
+
+リスト5-3
+<?php
+
+return [
+
+   'default' => env('DB_CONNECTION', 'mysql'),
+
+   'connections' => [
+
+       'sqlite' => [
+           'driver' => 'sqlite',
+           'database' => env('DB_DATABASE', 
+                 database_path('database.sqlite')),
+           'prefix' => '',
+       ],
+
+       'mysql' => [
+           'driver' => 'mysql',
+           'host' => env('DB_HOST', '127.0.0.1'),
+           'port' => env('DB_PORT', '3306'),
+           'database' => env('DB_DATABASE', 'forge'),
+           'username' => env('DB_USERNAME', 'forge'),
+           'password' => env('DB_PASSWORD', ''),
+           'unix_socket' => env('DB_SOCKET', ''),
+           'charset' => 'utf8mb4',
+           'collation' => 'utf8mb4_unicode_ci',
+           'prefix' => '',
+           'strict' => true,
+           'engine' => null,
+       ],
+
+       'pgsql' => [
+           'driver' => 'pgsql',
+           'host' => env('DB_HOST', '127.0.0.1'),
+           'port' => env('DB_PORT', '5432'),
+           'database' => env('DB_DATABASE', 'forge'),
+           'username' => env('DB_USERNAME', 'forge'),
+           'password' => env('DB_PASSWORD', ''),
+           'charset' => 'utf8',
+           'prefix' => '',
+           'schema' => 'public',
+           'sslmode' => 'prefer',
+       ],
+
+       'sqlsrv' => [
+           'driver' => 'sqlsrv',
+           'host' => env('DB_HOST', 'localhost'),
+           'port' => env('DB_PORT', '1433'),
+           'database' => env('DB_DATABASE', 'forge'),
+           'username' => env('DB_USERNAME', 'forge'),
+           'password' => env('DB_PASSWORD', ''),
+           'charset' => 'utf8',
+           'prefix' => '',
+       ],
+
+   ],
+
+   ……以下略……
+
+];
+
+
+リスト5-4
+// use Illuminate\Support\Facades\DB;　を追加
+
+public function index(Request $request)
+{
+   $items = DB::select('select * from people');
+   return view('hello.index', ['items' => $items]);
+}
+
+
+リスト5-5
+@section('content')
+   <table>
+   <tr><th>Name</th><th>Mail</th><th>Age</th></tr>
+   @foreach ($items as $item)
+       <tr>
+           <td>{{$item->name}}</td>
+           <td>{{$item->mail}}</td>
+           <td>{{$item->age}}</td>
+       </tr>
+   @endforeach
+   </table>
+@endsection
+
+
+リスト5-6
+th {background-color:#999; color:fff; padding:5px 10px; }
+td {border: solid 1px #aaa; color:#999; padding:5px 10px; }
+
+
+リスト5-7
+public function index(Request $request)
+{
+   if (isset($request->id))
+   {
+      $param = ['id' => $request->id];
+      $items = DB::select('select * from people where id = :id',
+         $param);
+   } else {
+      $items = DB::select('select * from people');
+   }
+   return view('hello.index', ['items' => $items]);
+}
+
+
+リスト5-8
+@extends('layouts.helloapp')
+
+@section('title', 'Add')
+
+@section('menubar')
+   @parent
+   新規作成ページ
+@endsection
+
+@section('content')
+   <table>
+   <form action="/hello/add" method="post">
+      {{ csrf_field() }}
+      <tr><th>name: </th><td><input type="text" name="name"></td></tr>
+      <tr><th>mail: </th><td><input type="text" name="mail"></td></tr>
+      <tr><th>age: </th><td><input type="text" name="age"></td></tr>
+      <tr><th></th><td><input type="submit" value="send"></td></tr>
+   </form>
+   </table>
+@endsection
+
+@section('footer')
+copyright 2017 tuyano.
+@endsection
+
+
+リスト5-9
+class HelloController extends Controller
+{
+   public function index(Request $request)
+   {
+       $items = DB::select('select * from people');
+       return view('hello.index', ['items' => $items]);
+   }
+
+   public function post(Request $request)
+   {
+       $items = DB::select('select * from people');
+       return view('hello.index', ['items' => $items]);
+   }
+
+   public function add(Request $request)
+   {
+       return view('hello.add');
+   }
+
+   public function create(Request $request)
+   {
+       $param = [
+           'name' => $request->name,
+           'mail' => $request->mail,
+           'age' => $request->age,
+       ];
+       DB::insert('insert into people (name, mail, age) values (:name, :mail, :age)', $param);
+       return redirect('/hello');
+   }
+
+}
+
+
+リスト5-10
+Route::get('hello/add', 'HelloController@add');
+Route::post('hello/add', 'HelloController@create');
+
+
+リスト5-11
+@extends('layouts.helloapp')
+
+@section('title', 'Edit')
+
+@section('menubar')
+   @parent
+   更新ページ
+@endsection
+
+@section('content')
+   <table>
+   <form action="/hello/edit" method="post">
+      {{ csrf_field() }}
+      <input type="hidden" name="id" value="{{$form->id}}">
+      <tr><th>name: </th><td><input type="text" name="name" 
+         value="{{$form->name}}"></td></tr>
+      <tr><th>mail: </th><td><input type="text" name="mail" 
+         value="{{$form->mail}}"></td></tr>
+      <tr><th>age: </th><td><input type="text" name="age" 
+         value="{{$form->age}}"></td></tr>
+      <tr><th></th><td><input type="submit" 
+         value="send"></td></tr>
+   </form>
+   </table>
+@endsection
+
+@section('footer')
+copyright 2017 tuyano.
+@endsection
+
+
+リスト5-12
+public function edit(Request $request)
+{
+   $param = ['id' => $request->id];
+   $item = DB::select('select * from people where id = :id', $param);
+   return view('hello.edit', ['form' => $item[0]]);
+}
+
+public function update(Request $request)
+{
+   $param = [
+       'id' => $request->id,
+       'name' => $request->name,
+       'mail' => $request->mail,
+       'age' => $request->age,
+   ];
+   DB::update('update people set name =:name, mail = :mail, age = :age where id = :id', $param);
+   return redirect('/hello');
+}
+
+
+リスト5-13
+Route::get('hello/edit', 'HelloController@edit');
+Route::post('hello/edit', 'HelloController@update');
+
+
+リスト5-14
+@extends('layouts.helloapp')
+
+@section('title', 'Delete')
+
+@section('menubar')
+   @parent
+   削除ページ
+@endsection
+
+@section('content')
+   <table>
+   <form action="/hello/del" method="post">
+      {{ csrf_field() }}
+      <input type="hidden" name="id" value="{{$form->id}}">
+      <tr><th>name: </th><td>{{$form->name}}</td></tr>
+      <tr><th>mail: </th><td>{{$form->mail}}</td></tr>
+      <tr><th>age: </th><td>{{$form->age}}</td></tr>
+      <tr><th></th><td><input type="submit" value="send"></td></tr>
+   </form>
+   </table>
+@endsection
+
+@section('footer')
+copyright 2017 tuyano.
+@endsection
+
+
+リスト5-15
+public function del(Request $request)
+{
+   $param = ['id' => $request->id];
+   $item = DB::select('select * from people where id = :id', $param);
+   return view('hello.del', ['form' => $item[0]]);
+}
+
+public function remove(Request $request)
+{
+   $param = ['id' => $request->id];
+   DB::delete('delete from people where id = :id', $param);
+   return redirect('/hello');
+}
+
+
+リスト5-16
+Route::get('hello/del', 'HelloController@del');
+Route::post('hello/del', 'HelloController@remove');
+
+
+リスト5-17
+public function index(Request $request)
+{
+   $items = DB::table('people')->get();
+   return view('hello.index', ['items' => $items]);
+}
+
+
+リスト5-18
+@extends('layouts.helloapp')
+
+@section('title', 'Show')
+
+@section('menubar')
+   @parent
+   詳細ページ
+@endsection
+
+@section('content')
+   <table>
+      <tr><th>id: </th><td>{{$item->id}}</td></tr>
+      <tr><th>name: </th><td>{{$item->name}}</td></tr>
+      <tr><th>mail: </th><td>{{$item->mail}}</td></tr>
+      <tr><th>age: </th><td>{{$item->age}}</td></tr>
+   </table>
+@endsection
+
+@section('footer')
+copyright 2017 tuyano.
+@endsection
+
+
+リスト5-19
+public function show(Request $request)
+{
+   $id = $request->id;
+   $item = DB::table('people')->where('id', $id)->first();
+   return view('hello.show', ['item' => $item]);
+}
+
+
+リスト5-20
+Route::get('hello/show', 'HelloController@show');
+
+
+リスト5-21
+@section('content')
+   @if ($items != null)
+       @foreach($items as $item)
+       <table width="400px">
+       <tr><th width="50px">id:</th>
+       <td width="50px">{{$item->id}}</td>
+       <th width="50px">name:</th>
+       <td>{{$item->name}}</td></tr>
+       </table>
+       @endforeach
+   @endif
+@endsection
+
+
+リスト5-22
+public function show(Request $request)
+{
+   $id = $request->id;
+   $items = DB::table('people')->where('id', '<=', $id)->get();
+   return view('hello.show', ['items' => $items]);
+}
+
+
+リスト5-23
+public function show(Request $request)
+{
+   $name = $request->name;
+   $items = DB::table('people')
+       ->where('name', 'like', '%' . $name . '%')
+       ->orWhere('mail', 'like', '%' . $name . '%')
+       ->get();
+   return view('hello.show', ['items' => $items]);
+}
+
+
+リスト5-24
+public function show(Request $request)
+{
+   $min = $request->min;
+   $max = $request->max;
+   $items = DB::table('people')
+       ->whereRaw('age >= ? and age <= ?',
+        [$min, $max])->get();
+   return view('hello.show', ['items' => $items]);
+}
+
+
+リスト5-25
+public function index(Request $request)
+{
+   $items = DB::table('people')->orderBy('age', 'asc')->get();
+   return view('hello.index', ['items' => $items]);
+}
+
+
+リスト5-26
+public function show(Request $request)
+{
+   $page = $request->page;
+   $items = DB::table('people')
+       ->offset($page * 3)
+       ->limit(3)
+       ->get();
+   return view('hello.show', ['items' => $items]);
+}
+
+
+リスト5-27
+public function add(Request $request)
+{
+   return view('hello.add');
+}
+
+public function create(Request $request)
+{
+   $param = [
+       'name' => $request->name,
+       'mail' => $request->mail,
+       'age' => $request->age,
+   ];
+   DB::table('people')->insert($param);
+   return redirect('/hello');
+}
+
+
+リスト5-28
+public function edit(Request $request)
+{
+   $item = DB::table('people')
+       ->where('id', $request->id)->first();
+   return view('hello.edit', ['form' => $item]);
+}
+
+public function update(Request $request)
+{
+   $param = [
+       'name' => $request->name,
+       'mail' => $request->mail,
+       'age' => $request->age,
+   ];
+   DB::table('people')
+       ->where('id', $request->id)
+       ->update($param);
+   return redirect('/hello');
+}
+
+
+リスト5-29
+public function del(Request $request)
+{
+   $item = DB::table('people')
+       ->where('id', $request->id)->first();
+   return view('hello.del', ['form' => $item]);
+}
+
+public function remove(Request $request)
+{
+   DB::table('people')
+       ->where('id', $request->id)->delete();
+   return redirect('/hello');
+}
+
+
+リスト5-30
+<?php
+
+use Illuminate\Support\Facades\Schema;
+use Illuminate\Database\Schema\Blueprint;
+use Illuminate\Database\Migrations\Migration;
+
+class CreatePeopleTable extends Migration
+{
+   public function up()
+   {
+       //
+   }
+
+   public function down()
+   {
+       //
+   }
+}
+
+
+リスト5-31
+public function up()
+{
+   Schema::create('people', function (Blueprint $table) {
+       $table->increments('id');
+       $table->string('name');
+       $table->string('mail');
+       $table->integer('age');
+       $table->timestamps();
+   });
+}
+
+
+リスト5-32
+public function down()
+{
+   Schema::dropIfExists('people');
+}
+
+
+リスト5-33
+<?php
+
+use Illuminate\Database\Seeder;
+
+class PeopleTableSeeder extends Seeder
+{
+   public function run()
+   {
+       //
+   }
+}
+
+
+リスト5-34
+// use Illuminate\Support\Facades\DB;　を追記
+
+public function run()
+{
+   $param = [
+       'name' => 'taro',
+       'mail' => 'taro@yamada.jp',
+       'age' => 12,
+   ];
+   DB::table('people')->insert($param);
+
+   $param = [
+       'name' => 'hanako',
+       'mail' => 'hanako@flower.jp',
+       'age' => 34,
+   ];
+   DB::table('people')->insert($param);
+
+   $param = [
+       'name' => 'sachiko',
+       'mail' => 'sachiko@happy.jp',
+       'age' => 56,
+   ];
+   DB::table('people')->insert($param);
+}
+
+
+リスト5-35
+<?php
+
+use Illuminate\Database\Seeder;
+
+class DatabaseSeeder extends Seeder
+{
+   public function run()
+   {
+       $this->call(PeopleTableSeeder::class); //●
+   }
+}
+
+
+リスト6-1
+<?php
+
+namespace App;
+
+use Illuminate\Database\Eloquent\Model;
+
+class Person extends Model
+{
+   //
+}
+
+
+リスト6-2
+<?php
+
+namespace App\Http\Controllers;
+
+use App\Person;
+use Illuminate\Http\Request;
+
+class PersonController extends Controller
+{
+   public function index(Request $request)
+   {
+       $items = Person::all();
+       return view('person.index', ['items' => $items]);
+   }
+}
+
+
+リスト6-3
+@extends('layouts.helloapp')
+
+@section('title', 'Person.index')
+
+@section('menubar')
+   @parent
+   インデックスページ
+@endsection
+
+@section('content')
+   <table>
+   <tr><th>Name</th><th>Mail</th><th>Age</th></tr>
+   @foreach ($items as $item)
+       <tr>
+           <td>{{$item->name}}</td>
+           <td>{{$item->mail}}</td>
+           <td>{{$item->age}}</td>
+       </tr>
+   @endforeach
+   </table>
+@endsection
+
+@section('footer')
+copyright 2017 tuyano.
+@endsection
+
+
+リスト6-4
+Route::get('person', 'PersonController@index');
+
+
+リスト6-5
+public function getData()
+{
+   return $this->id . ': ' . $this->name . ' (' . $this->age . ')';
+}
+
+
+リスト6-6
+@section('content')
+   <table>
+   <tr><th>Data</th></tr>
+   @foreach ($items as $item)
+       <tr>
+           <td>{{$item->getData()}}</td>
+       </tr>
+   @endforeach
+   </table>
+@endsection
+
+
+リスト6-7
+@extends('layouts.helloapp')
+
+@section('title', 'Person.find')
+
+@section('menubar')
+   @parent
+   検索ページ
+@endsection
+
+@section('content')
+   <form action="/person/find" method="post">
+   {{ csrf_field() }}
+   <input type="text" name="input" value="{{$input}}">
+   <input type="submit" value="find">
+   </form>
+   @if (isset($item))
+   <table>
+   <tr><th>Data</th></tr>
+   <tr>
+      <td>{{$item->getData()}}</td>
+   </tr>
+   </table>
+   @endif
+@endsection
+
+@section('footer')
+copyright 2017 tuyano.
+@endsection
+
+
+リスト6-8
+public function find(Request $request)
+{
+   return view('person.find',['input' => '']);
+}
+
+public function search(Request $request)
+{
+   $item = Person::find($request->input);
+   $param = ['input' => $request->input, 'item' => $item];
+   return view('person.find', $param);
+}
+
+
+リスト6-9
+Route::get('person/find', 'PersonController@find');
+Route::post('person/find', 'PersonController@search');
+
+
+リスト6-10
+public function search(Request $request)
+{
+   $item = Person::where('name', $request->input)->first();
+   $param = ['input' => $request->input, 'item' => $item];
+   return view('person.find', $param);
+}
+
+
+リスト6-11
+public function scopeNameEqual($query, $str)
+{
+   return $query->where('name', $str);
+}
+
+
+リスト6-12
+public function search(Request $request)
+{
+   $item = Person::nameEqual($request->input)->first();
+   $param = ['input' => $request->input, 'item' => $item];
+   return view('person.find', $param);
+}
+
+
+リスト6-13
+public function scopeAgeGreaterThan($query, $n)
+{
+   return $query->where('age','>=', $n);
+}
+
+public function scopeAgeLessThan($query, $n)
+{
+   return $query->where('age', '<=', $n);
+}
+
+
+リスト6-14
+public function search(Request $request)
+{
+   $min = $request->input * 1;
+   $max = $min + 10;
+   $item = Person::ageGreaterThan($min)->ageLessThan($max)->first();
+   $param = ['input' => $request->input, 'item' => $item];
+   return view('person.find', $param);
+}
+
+
+リスト6-15
+// use Illuminate\Database\Eloquent\Builder;  を追加
+
+protected static function boot()
+{
+   parent::boot();
+
+   static::addGlobalScope('age', function (Builder $builder) {
+       $builder->where('age', '>', 20);
+   });
+}
+
+
+リスト6-16
+<?php
+namespace App\Scopes;
+
+use Illuminate\Database\Eloquent\Scope;
+use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Builder;
+
+class ScopePerson implements Scope
+{
+   public function apply(Builder $builder, Model $model)
+   {
+       $builder->where('age', '>', 20);
+   }
+}
+
+
+リスト6-17
+// use App\Scopes\ScopePerson;　を追加
+
+protected static function boot()
+{
+   parent::boot();
+   static::addGlobalScope(new ScopePerson);
+}
+
+
+リスト6-18
+class Person extends Model
+{
+   protected $guarded = array('id');
+
+   public static $rules = array(
+      'name' => 'required',
+      'mail' => 'email',
+      'age' => 'integer|min:0|max:150'
+   );
+
+   // getDataは残しておく
+   public function getData()
+   {
+      return $this->id . ': ' . $this->name . ' (' . $this->age . ')';
+   }
+}
+
+
+リスト6-19
+@extends('layouts.helloapp')
+
+@section('title', 'Person.Add')
+
+@section('menubar')
+   @parent
+   新規作成ページ
+@endsection
+
+@section('content')
+   @if (count($errors) > 0)
+   <div>
+       <ul>
+           @foreach ($errors->all() as $error)
+               <li>{{ $error }}</li>
+           @endforeach
+       </ul>
+   </div>
+   @endif
+   <table>
+   <form action="/person/add" method="post">
+       {{ csrf_field() }}
+       <tr><th>name: </th><td><input type="text" name="name"
+           value="{{old('name')}}"></td></tr>
+       <tr><th>mail: </th><td><input type="text" name="mail"
+           value="{{old('mail')}}"></td></tr>
+       <tr><th>age: </th><td><input type="number" name="age"
+           value="{{old('age')}}"></td></tr>
+       <tr><th></th><td><input type="submit" 
+           value="send"></td></tr>
+   </form>
+   </table>
+@endsection
+
+@section('footer')
+copyright 2017 tuyano.
+@endsection
+
+
+リスト6-20
+public function add(Request $request)
+{
+   return view('person.add');
+}
+
+public function create(Request $request)
+{
+   $this->validate($request, Person::$rules);
+   $person = new Person;
+   $form = $request->all();
+   unset($form['_token']);
+   $person->fill($form)->save();
+   return redirect('/person');
+}
+
+
+リスト6-21
+Route::get('person/add', 'PersonController@add');
+Route::post('person/add', 'PersonController@create');
+
+
+リスト6-22
+@extends('layouts.helloapp')
+
+@section('title', 'Person.Edit')
+
+@section('menubar')
+   @parent
+   編集ページ
+@endsection
+
+@section('content')
+   @if (count($errors) > 0)
+   <div>
+       <ul>
+           @foreach ($errors->all() as $error)
+               <li>{{ $error }}</li>
+           @endforeach
+       </ul>
+   </div>
+   @endif
+   <table>
+   <form action="/person/edit" method="post">
+       {{ csrf_field() }}
+       <input type="hidden" name="id" value="{{$form->id}}">
+       <tr><th>name: </th><td><input type="text" name="name"
+           value="{{$form->name}}"></td></tr>
+       <tr><th>mail: </th><td><input type="text" name="mail"
+           value="{{$form->mail}}"></td></tr>
+       <tr><th>age: </th><td><input type="number" name="age"
+           value="{{$form->age}}"></td></tr>
+       <tr><th></th><td><input type="submit"
+           value="send"></td></tr>
+   </form>
+   </table>
+@endsection
+
+@section('footer')
+copyright 2017 tuyano.
+@endsection
+
+
+リスト6-23
+public function edit(Request $request)
+{
+   $person = Person::find($request->id);
+   return view('person.edit', ['form' => $person]);
+}
+
+public function update(Request $request)
+{
+   $this->validate($request, Person::$rules);
+   $person = Person::find($request->id);
+   $form = $request->all();
+   unset($form['_token']);
+   $person->fill($form)->save();
+   return redirect('/person');
+}
+
+
+リスト6-24
+Route::get('person/edit', 'PersonController@edit');
+Route::post('person/edit', 'PersonController@update');
+
+
+リスト6-25
+@extends('layouts.helloapp')
+
+@section('title', 'Person.Delete')
+
+@section('menubar')
+   @parent
+   削除ページ
+@endsection
+
+@section('content')
+   <table>
+   <form action="/person/del" method="post">
+      {{ csrf_field() }}
+      <input type="hidden" name="id" value="{{$form->id}}">
+      <tr><th>name: </th><td>{{$form->name}}</td></tr>
+      <tr><th>mail: </th><td>{{$form->mail}}</td></tr>
+      <tr><th>age: </th><td>{{$form->age}}</td></tr>
+      <tr><th></th><td><input type="submit" value="send"></td></tr>
+   </form>
+   </table>
+@endsection
+
+@section('footer')
+copyright 2017 tuyano.
+@endsection
+
+
+リスト6-26
+public function delete(Request $request)
+{
+   $person = Person::find($request->id);
+   return view('person.del', ['form' => $person]);
+}
+
+public function remove(Request $request)
+{
+   Person::find($request->id)->delete();
+   return redirect('/person');
+}
+
+
+リスト6-27
+Route::get('person/del', 'PersonController@delete');
+Route::post('person/del', 'PersonController@remove');
+
+
+リスト6-28
+CREATE TABLE "boards" (
+	"id" integer not null primary key autoincrement, 
+	"person_id" integer not null, 
+	"title" verchar not null, 
+	"message" verchar not null, 
+	"created_at" datetime null, 
+	"updated_at" datetime null
+);
+
+
+リスト6-29
+<?php
+use Illuminate\Support\Facades\Schema;
+use Illuminate\Database\Schema\Blueprint;
+use Illuminate\Database\Migrations\Migration;
+
+class CreateBoardsTable extends Migration
+{
+
+   public function up()
+   {
+       Schema::create('boards', function (Blueprint $table) {
+           $table->increments('id');
+           $table->integer('person_id');
+           $table->string('title');
+           $table->string('message');
+           $table->timestamps();
+       });
+   }
+
+   public function down()
+   {
+       Schema::dropIfExists('boards');
+   }
+
+}
+
+
+リスト6-30
+<?php
+namespace App;
+
+use Illuminate\Database\Eloquent\Model;
+
+class Board extends Model
+{
+
+   protected $guarded = array('id');
+  
+    public static $rules = array(
+       'person_id' => 'required',
+       'title' => 'required',
+       'message' => 'required'
+   );
+
+   public function getData()
+   {
+       return $this->id . ': ' . $this->title;
+   }
+
+}
+
+
+リスト6-31
+<?php
+namespace App\Http\Controllers;
+
+use App\Board;
+use Illuminate\Http\Request;
+
+class BoardController extends Controller
+{
+
+   public function index(Request $request)
+   {
+       $items = Board::all();
+       return view('board.index', ['items' => $items]);
+   }
+
+   public function add(Request $request)
+   {
+       return view('board.add');
+   }
+
+   public function create(Request $request)
+   {
+       $this->validate($request, Board::$rules);
+       $board = new Board;
+       $form = $request->all();
+       unset($form['_token']);
+       $board->fill($form)->save();
+       return redirect('/board');
+   }
+
+}
+
+
+リスト6-32　index.blade.php
+@extends('layouts.helloapp')
+
+@section('title', 'Board.index')
+
+@section('menubar')
+   @parent
+   ボード・ページ
+@endsection
+
+@section('content')
+   <table>
+   <tr><th>Data</th></tr>
+   @foreach ($items as $item)
+       <tr>
+           <td>{{$item->getData()}}</td>
+       </tr>
+   @endforeach
+   </table>
+@endsection
+
+@section('footer')
+copyright 2017 tuyano.
+@endsection
+
+
+リスト6-33　add.blade.php
+@extends('layouts.helloapp')
+
+@section('title', 'Board.Add')
+
+@section('menubar')
+   @parent
+   投稿ページ
+@endsection
+
+@section('content')
+   <table>
+   <form action="/board/add" method="post">
+      {{ csrf_field() }}
+      <tr><th>person id: </th><td><input type="number" 
+         name="person_id"></td></tr>
+      <tr><th>title: </th><td><input type="text" 
+         name="title"></td></tr>
+      <tr><th>message: </th><td><input type="text" 
+         name="message"></td></tr>
+      <tr><th></th><td><input type="submit" 
+         value="send"></td></tr>
+   </form>
+   </table>
+@endsection
+
+@section('footer')
+copyright 2017 tuyano.
+@endsection
+
+
+リスト6-34
+Route::get('board', 'BoardController@index');
+
+Route::get('board/add', 'BoardController@add');
+Route::post('board/add', 'BoardController@create');
+
+
+リスト6-35
+public function board()
+{
+   return $this->hasOne('App\Board');
+}
+
+
+リスト6-36
+@section('content')
+   <table>
+   <tr><th>Person</th><th>Board</th></tr>
+   @foreach ($items as $item)
+       <tr>
+           <td>{{$item->getData()}}</td>
+           <td>@if ($item->board != null)
+                   {{$item->board->getData()}}
+               @endif
+           </td>
+       </tr>
+   @endforeach
+   </table>
+@endsection
+
+
+リスト6-37
+public function boards()
+{
+   return $this->hasMany('App\Board');
+}
+
+
+リスト6-38
+@section('content')
+   <table>
+   <tr><th>Person</th><th>Board</th></tr>
+   @foreach ($items as $item)
+       <tr>
+           <td>{{$item->getData()}}</td>
+           <td>
+           @if ($item->boards != null)
+               <table width="100%">
+               @foreach ($item->boards as $obj)
+                   <tr><td>{{$obj->getData()}}</td></tr>
+               @endforeach
+               </table>
+           @endif
+           </td>
+       </tr>
+   @endforeach
+   </table>
+@endsection
+
+
+リスト6-39
+// 新たにメソッドを追加
+public function person()
+{
+   return $this->belongsTo('App\Person');
+}
+
+// 既にあるメソッドを修正
+public function getData()
+{
+   return $this->id . ': ' . $this->title . ' (' 
+      . $this->person->name . ')';
+}
+
+
+リスト6-40
+public function index(Request $request)
+{
+   $hasItems = Person::has('boards')->get();
+   $noItems = Person::doesntHave('boards')->get();
+   $param = ['hasItems' => $hasItems, 'noItems' => $noItems];
+   return view('person.index', $param);
+}
+
+
+リスト6-41
+@section('content')
+   <table>
+   <tr><th>Person</th><th>Board</th></tr>
+   @foreach ($hasItems as $item)
+       <tr>
+           <td>{{$item->getData()}}</td>
+           <td>
+               <table width="100%">
+               @foreach ($item->boards as $obj)
+                   <tr><td>{{$obj->getData()}}</td></tr>
+               @endforeach
+               </table>
+           </td>
+       </tr>
+   @endforeach
+   </table>
+   <div style="margin:10px;"></div>
+   <table>
+   <tr><th>Person</th></tr>
+   @foreach ($noItems as $item)
+       <tr>
+           <td>{{$item->getData()}}</td>
+       </tr>
+   @endforeach
+   </table>
+@endsection
+
+
+リスト6-42
+public function index(Request $request)
+{
+   $items = Board::with('person')->get();
+   return view('board.index', ['items' => $items]);
+}
+
+
+リスト6-43
+@section('content')
+   <table>
+   <tr><th>Message</th><th>Name</th></tr>
+   @foreach ($items as $item)
+       <tr>
+           <td>{{$item->message}}</td>
+           <td>{{$item->person->name}}</td>
+       </tr>
+   @endforeach
+   </table>
+@endsection
+
+
+リスト7-1
+<?php
+use Illuminate\Support\Facades\Schema;
+use Illuminate\Database\Schema\Blueprint;
+use Illuminate\Database\Migrations\Migration;
+
+class CreateRestdataTable extends Migration
+{
+   public function up()
+   {
+       Schema::create('restdata', 
+               function (Blueprint $table) {
+           $table->increments('id');
+           $table->string('message');
+           $table->string('url');
+           $table->timestamps();
+       });
+   }
+
+   public function down()
+   {
+       Schema::dropIfExists('restdata');
+   }
+}
+
+
+リスト7-2
+<?php
+namespace App;
+
+use Illuminate\Database\Eloquent\Model;
+
+class Restdata extends Model
+{
+   protected $table = 'restdata';
+   protected $guarded = array('id');
+  
+   public static $rules = array(
+       'message' => 'required',
+       'url' => 'required'
+   );
+
+   public function getData()
+   {
+       return $this->id . ':' . $this->mssage 
+          . '(' . $this->url . ')';
+   }
+
+}
+
+
+リスト7-3
+<?php
+use Illuminate\Database\Seeder;
+use App\Restdata;
+
+class RestdataTableSeeder extends Seeder
+{
+   public function run()
+   {
+       $param = [
+           'message' => 'Google Japan',
+           'url' => 'https://www.google.co.jp',
+       ];
+       $restdata = new Restdata;
+       $restdata->fill($param)->save();
+       $param = [
+           'message' => 'Yahoo Japan',
+           'url' => 'https://www.yahoo.co.jp',
+       ];
+       $restdata = new Restdata;
+       $restdata->fill($param)->save();
+       $param = [
+           'message' => 'MSN Japan',
+           'url' => 'http://www.msn.com/ja-jp',
+       ];
+       $restdata = new Restdata;
+       $restdata->fill($param)->save();
+   }
+}
+
+
+リスト7-4
+<?php
+use Illuminate\Database\Seeder;
+
+class DatabaseSeeder extends Seeder
+{
+   public function run()
+   {
+       $this->call(RestdataTableSeeder::class);
+   }
+}
+
+
+リスト7-5
+<?php
+namespace App\Http\Controllers;
+
+use Illuminate\Http\Request;
+
+class RestappController extends Controller
+{
+   public function index()
+   {
+       //
+   }
+
+   public function create()
+   {
+       //
+   }
+
+   public function store(Request $request)
+   {
+       //
+   }
+
+   public function show($id)
+   {
+       //
+   }
+
+   public function edit($id)
+   {
+       //
+   }
+
+   public function update(Request $request, $id)
+   {
+       //
+   }
+
+   public function destroy($id)
+   {
+       //
+   }
+}
+
+
+リスト7-6
+Route::resource('rest', 'RestappController');
+
+
+リスト7-7
+//use App\Restdata;　を追記
+
+public function index()
+{
+   $items = Restdata::all();
+   return $items->toArray();
+}
+
+public function show($id)
+{
+   $item = Restdata::find($id);
+   return $item->toArray();
+}
+
+
+リスト7-8
+<table>
+<form action="/rest" method="post">
+   {{ csrf_field() }}
+   <tr><th>message: </th><td><input type="text" name="message"
+       value="{{old('message')}}"></td></tr>
+   <tr><th>url: </th><td><input type="text" name="url"
+       value="{{old('url')}}"></td></tr>
+   <tr><th></th><td><input type="submit" value="send"></td></tr>
+</form>
+</table>
+
+
+リスト7-9
+public function create()
+{
+   return view('rest.create');
+}
+
+public function store(Request $request)
+{
+   $restdata = new Restdata;
+   $form = $request->all();
+   unset($form['_token']);
+   $restdata->fill($form)->save();
+   return redirect('/rest');
+}
+
+
+リスト7-10
+<html>
+<head>
+   <title>hello/Rest</title>
+   <style>
+   body {font-size:16pt; color:#999; margin: 5px; }
+   h1 { font-size:50pt; text-align:right; color:#f6f6f6;
+       margin:-20px 0px -30px 0px; letter-spacing:-4pt; }
+   th {background-color:#999; color:fff; padding:5px 10px; }
+   td {border: solid 1px #aaa; color:#999; padding:5px 10px; }
+   .content {margin:10px; }
+   </style>
+</head>
+<body>
+   <h1>Rest</h1>
+
+   @include('rest.create')
+  
+</body>
+</html>
+
+
+リスト7-11
+public function rest(Request $request)
+{
+   return view('hello.rest');
+}
+
+
+リスト7-12
+Route::get('hello/rest', 'HelloController@rest');
+
+
+リスト7-13
+@extends('layouts.helloapp')
+
+@section('title', 'Session')
+
+@section('menubar')
+   @parent
+   セッションページ
+@endsection
+
+@section('content')
+   <p>{{$session_data}}</p>
+   <form action="/hello/session" method="post">
+   {{ csrf_field() }}
+   <input type="text" name="input">
+   <input type="submit" value="send">
+   </form>
+@endsection
+
+@section('footer')
+copyright 2017 tuyano.
+@endsection
+
+
+リスト7-14
+public function ses_get(Request $request)
+{
+   $sesdata = $request->session()->get('msg');
+   return view('hello.session', ['session_data' => $sesdata]);
+}
+
+public function ses_put(Request $request)
+{
+   $msg = $request->input;
+   $request->session()->put('msg', $msg);
+   return redirect('hello/session');
+}
+
+
+リスト7-15
+Route::get('hello/session', 'HelloController@ses_get');
+Route::post('hello/session', 'HelloController@ses_put');
+
+
+リスト7-16
+<?php
+return [
+    'driver' => env('SESSION_DRIVER', 'file'),
+    'lifetime' => 120,
+    'expire_on_close' => true, // default = false
+    'encrypt' => false,
+    'files' => storage_path('framework/sessions'),
+    'connection' => null,
+    'table' => 'sessions',
+    'store' => null,
+    'lottery' => [2, 100],
+    'cookie' => 'laravel_session',
+    'path' => '/',
+    'domain' => env('SESSION_DOMAIN', null),
+    'secure' => env('SESSION_SECURE_COOKIE', false),
+    'http_only' => true,
+];
+
+
+リスト7-17
+'driver' => env('SESSION_DRIVER', 'database'),
+
+
+リスト7-18
+SESSION_DRIVER=database
+
+
+リスト7-19
+<?php
+use Illuminate\Support\Facades\Schema;
+use Illuminate\Database\Schema\Blueprint;
+use Illuminate\Database\Migrations\Migration;
+
+class CreateSessionsTable extends Migration
+{
+    public function up()
+    {
+        Schema::create('sessions', function (Blueprint $table) {
+            $table->string('id')->unique();
+            $table->unsignedInteger('user_id')->nullable();
+            $table->string('ip_address', 45)->nullable();
+            $table->text('user_agent')->nullable();
+            $table->text('payload');
+            $table->integer('last_activity');
+        });
+    }
+
+    public function down()
+    {
+        Schema::dropIfExists('sessions');
+    }
+}
+
+
+リスト7-20
+// use App\Person;　を追記
+
+public function index(Request $request)
+{
+   $items = DB::table('people')->simplePaginate(5);
+   return view('hello.index', ['items' => $items]);
+}
+
+
+リスト7-21
+@extends('layouts.helloapp')
+<style>
+   .pagination { font-size:10pt; }
+   .pagination li { display:inline-block }
+</style>
+@section('title', 'Index')
+
+@section('menubar')
+   @parent
+   インデックスページ
+@endsection
+
+@section('content')
+   <table>
+   <tr><th>Name</th><th>Mail</th><th>Age</th></tr>
+   @foreach ($items as $item)
+       <tr>
+           <td>{{$item->name}}</td>
+           <td>{{$item->mail}}</td>
+           <td>{{$item->age}}</td>
+       </tr>
+   @endforeach
+   </table>
+   {{ $items->links() }}
+@endsection
+
+@section('footer')
+copyright 2017 tuyano.
+@endsection
+
+
+リスト7-22
+public function index(Request $request)
+{
+   $sort = $request->sort;
+   $items = Person::orderBy($sort, 'asc')
+      ->simplePaginate(5);
+   $param = ['items' => $items, 'sort' => $sort];
+   return view('hello.index', $param);
+}
+
+
+リスト7-23
+@extends('layouts.helloapp')
+<style>
+   .pagination { font-size:10pt; }
+   .pagination li { display:inline-block }
+   tr th a:link { color: white; }
+   tr th a:visited { color: white; }
+   tr th a:hover { color: white; }
+   tr th a:active { color: white; }
+</style>
+@section('title', 'Index')
+
+@section('menubar')
+   @parent
+   インデックスページ
+@endsection
+
+@section('content')
+   <table>
+   <tr>
+       <th><a href="/hello?sort=name">name</a></th>
+       <th><a href="/hello?sort=mail">mail</a></th>
+       <th><a href="/hello?sort=age">age</a></th>
+   </tr>
+   @foreach ($items as $item)
+       <tr>
+           <td>{{$item->name}}</td>
+           <td>{{$item->mail}}</td>
+           <td>{{$item->age}}</td>
+       </tr>
+   @endforeach
+   </table>
+   {{ $items->appends(['sort' => $sort])->links() }}
+@endsection
+
+@section('footer')
+copyright 2017 tuyano.
+@endsection
+
+
+リスト7-24
+public function index(Request $request)
+{
+   $sort = $request->sort;
+   $items = Person::orderBy($sort, 'asc')
+       ->paginate(5);
+   $param = ['items' => $items, 'sort' => $sort];
+   return view('hello.index', $param);
+}
+
+
+リスト7-25
+@if ($paginator->hasPages())
+   <ul class="pagination">
+       {{-- Previous Page Link --}}
+       @if ($paginator->onFirstPage())
+           <li class="disabled"><span>
+              @lang('pagination.previous')</span></li>
+       @else
+           <li><a href="{{ $paginator->previousPageUrl() }}"
+              rel="prev">@lang('pagination.previous')</a></li>
+       @endif
+
+       {{-- Next Page Link --}}
+       @if ($paginator->hasMorePages())
+           <li><a href="{{ $paginator->nextPageUrl() }}" 
+               rel="next">@lang('pagination.next')</a></li>
+       @else
+           <li class="disabled"><span>@lang('pagination.next')
+               </span></li>
+       @endif
+   </ul>
+@endif
+
+
+リスト7-26
+<link rel="stylesheet" type="text/css" href="/css/app.css">
+
+
+リスト7-27
+<?php
+use Illuminate\Support\Facades\Schema;
+use Illuminate\Database\Schema\Blueprint;
+use Illuminate\Database\Migrations\Migration;
+
+class CreateUsersTable extends Migration
+{
+   public function up()
+   {
+       Schema::create('users', function (Blueprint $table) {
+           $table->increments('id');
+           $table->string('name');
+           $table->string('email')->unique();
+           $table->string('password');
+           $table->rememberToken();
+           $table->timestamps();
+       });
+   }
+
+   public function down()
+   {
+       Schema::dropIfExists('users');
+   }
+}
+
+
+リスト7-28
+// use Illuminate\Support\Facades\Auth;　を追記
+
+public function index(Request $request)
+{
+   $user = Auth::user();
+   $sort = $request->sort;
+   $items = Person::orderBy($sort, 'asc')
+       ->simplePaginate(5);
+   $param = ['items' => $items, 'sort' => $sort, 'user' => $user];
+   return view('hello.index', $param);
+}
+
+
+リスト7-29
+@if (Auth::check())
+<p>USER: {{$user->name . ' (' . $user->email . ')'}}</p>
+@else
+<p>※ログインしていません。（<a href="/login">ログイン</a>｜
+   <a href="/register">登録</a>）</p>
+@endif
+
+
+リスト7-30
+Route::get('hello', 'HelloController@index')
+    ->middleware('auth');
+
+
+リスト7-31
+@extends('layouts.helloapp')
+
+@section('title', 'ユーザー認証')
+
+@section('menubar')
+   @parent
+   ユーザー認証ページ
+@endsection
+
+@section('content')
+<p>{{$message}}</p>
+   <table>
+   <form action="/hello/auth" method="post">
+      {{ csrf_field() }}
+      <tr><th>mail: </th><td><input type="text" 
+            name="email"></td></tr>
+      <tr><th>pass: </th><td><input type="password" 
+            name="password"></td></tr>
+      <tr><th></th><td><input type="submit" 
+            value="send"></td></tr>
+   </form>
+   </table>
+@endsection
+
+@section('footer')
+copyright 2017 tuyano.
+@endsection
+
+
+リスト7-32
+public function getAuth(Request $request)
+{
+   $param = ['message' => 'ログインして下さい。'];
+   return view('hello.auth', $param);
+}
+
+public function postAuth(Request $request)
+{
+   $email = $request->email;
+   $password = $request->password;
+   if (Auth::attempt(['email' => $email,
+           'password' => $password])) {
+       $msg = 'ログインしました。（' . Auth::user()->name . '）';
+   } else {
+       $msg = 'ログインに失敗しました。';
+   }
+   return view('hello.auth', ['message' => $msg]);
+}
+
+※コントローラー記述後、web.phpに以下のルート情報を用意
+Route::get('hello/auth', 'HelloController@getAuth');
+Route::post('hello/auth', 'HelloController@postAuth');
+
+
+リスト7-33
+<?php
+namespace Tests\Feature;
+
+use Tests\TestCase;
+use Illuminate\Foundation\Testing\WithoutMiddleware;
+use Illuminate\Foundation\Testing\DatabaseMigrations;
+use Illuminate\Foundation\Testing\DatabaseTransactions;
+
+class HelloTest extends TestCase
+{
+   public function testExample()
+   {
+       $this->assertTrue(true);
+   }
+}
+
+
+リスト7-34
+<env name="DB_DATABASE" value="database\database_test.sqlite"/>
+
+
+リスト7-35
+<?php
+$factory->define(App\User::class, 
+      function (Faker\Generator $faker) {
+   static $password;
+
+   return [
+       'name' => $faker->name,
+       'email' => $faker->unique()->safeEmail,
+       'password' => $password ?: $password = bcrypt('secret'),
+       'remember_token' => str_random(10),
+   ];
+});
+
+
+リスト7-36
+$factory->define(App\Person::class, 
+      function (Faker\Generator $faker) {
+   return [
+       'name' => $faker->name,
+       'mail' => $faker->safeEmail,
+       'age' => random_int(1,99),
+   ];
+});
+
+
+リスト7-37
+php artisan make:test HelloTest
+
+
+リスト7-38
+<?php
+
+namespace Tests\Feature;
+
+use Tests\TestCase;
+use Illuminate\Foundation\Testing\WithoutMiddleware;
+use Illuminate\Foundation\Testing\DatabaseMigrations;
+use Illuminate\Foundation\Testing\DatabaseTransactions;
+
+class HelloTest extends TestCase
+{
+
+   public function testHello()
+   {
+       $this->assertTrue(true);
+
+       $arr = [];
+       $this->assertEmpty($arr);
+
+       $msg = "Hello";
+       $this->assertEquals('Hello', $msg);
+
+       $n = random_int(0, 100);
+       $this->assertLessThan(100, $n);
+   }
+}
+
+
+リスト7-39
+// use App\User;　を追記
+
+class HelloTest extends TestCase
+{
+   use DatabaseMigrations;
+
+   public function testHello()
+   {
+       $this->assertTrue(true);
+
+       $response = $this->get('/');
+       $response->assertStatus(200);
+      
+       $response = $this->get('/hello');
+       $response->assertStatus(302);
+      
+       $user = factory(User::class)->create();
+       $response = $this->actingAs($user)->get('/hello');
+       $response->assertStatus(200);
+
+       $response = $this->get('/no_route');
+       $response->assertStatus(404);
+   }
+}
+
+
+リスト7-40
+// use App\User;
+// use App\Person;　を追記
+
+class HelloTest extends TestCase
+{
+   use DatabaseMigrations;
+
+   public function testHello()
+   {
+       // ダミーで利用するデータ
+       factory(User::class)->create([
+           'name' => 'AAA',
+           'email' => 'BBB@CCC.COM',
+           'password' => 'ABCABC',
+       ]);
+       factory(User::class, 10)->create();
+
+       $this->assertDatabaseHas('users', [
+           'name' => 'AAA',
+           'email' => 'BBB@CCC.COM',
+           'password' => 'ABCABC',
+       ]);
+
+       // ダミーで利用するデータ
+       factory(Person::class)->create([
+           'name' => 'XXX',
+           'mail' => 'YYY@ZZZ.COM',
+           'age' => 123,
+       ]);
+       factory(Person::class, 10)->create();
+
+       $this->assertDatabaseHas('people', [
+           'name' => 'XXX',
+           'mail' => 'YYY@ZZZ.COM',
+           'age' => 123,
+       ]);
+
+   }
+}
+
+
