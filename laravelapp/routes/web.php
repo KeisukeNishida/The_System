@@ -69,3 +69,14 @@ Route::post('hello/session', 'HelloController@ses_put');
 Auth::routes();
 
 Route::get('/home', 'HomeController@index')->name('home');
+
+// カードゲーム
+Route::get('/card', 'CardGameController@form')->middleware('auth');
+Route::post('/card', 'CardGameController@create')->middleware('auth');
+Route::get('/card/{id}', 'CardGameController@show')->middleware('auth');
+
+// ホームページ
+Route::get('/', 'HomePageController@show')->name('home.top');
+
+Route::get('/home02', 'HomePageController@home02')->name('home.page02');
+
