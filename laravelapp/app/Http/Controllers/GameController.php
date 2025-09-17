@@ -1,0 +1,14 @@
+<?php
+
+namespace App\Http\Controllers;
+
+use Illuminate\Http\Request;
+
+class GameController extends Controller
+{
+    // 追加: /homepage02 → HomePage/homepage02.blade.php
+    public function game01()
+    {
+        return view('game.game01'); // resources/views/game/game01.blade.php
+    }
+}

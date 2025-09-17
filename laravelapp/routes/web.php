@@ -80,3 +80,4 @@ Route::get('/', 'HomePageController@show')->name('home.top');
 
 Route::get('/home02', 'HomePageController@home02')->name('home.page02');
 
+Route::get('/game01', 'GameController@game01')->name('Game.game01');
