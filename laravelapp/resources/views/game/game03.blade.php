@@ -193,23 +193,23 @@
             return [
                 {x: 400,  y: skyArea * 0.7, width: 28, height: 24, velocityX: 0, velocityY: 0,
                 color: '#ff6b9d', alive: true, wingFlap: 0, attackTimer: 0, eyeBlink: 0,
-                homingPower: 0.25, maxSpeed: 5},
+                homingPower: 0.25, maxSpeed: 5, speechTimer: 0, speech: ''},
 
                 {x: 700,  y: skyArea * 0.5, width: 28, height: 24, velocityX: 0, velocityY: 0,
                 color: '#ff6b9d', alive: true, wingFlap: 0, attackTimer: 0, eyeBlink: 0,
-                homingPower: 0.25, maxSpeed: 5},
+                homingPower: 0.25, maxSpeed: 5, speechTimer: 0, speech: ''},
 
                 {x: 1000, y: skyArea * 0.8, width: 28, height: 24, velocityX: 0, velocityY: 0,
                 color: '#ff6b9d', alive: true, wingFlap: 0, attackTimer: 0, eyeBlink: 0,
-                homingPower: 0.25, maxSpeed: 5},
+                homingPower: 0.25, maxSpeed: 5, speechTimer: 0, speech: ''},
 
                 {x: 1300, y: skyArea * 0.6, width: 28, height: 24, velocityX: 0, velocityY: 0,
                 color: '#ff6b9d', alive: true, wingFlap: 0, attackTimer: 0, eyeBlink: 0,
-                homingPower: 0.25, maxSpeed: 5},
+                homingPower: 0.25, maxSpeed: 5, speechTimer: 0, speech: ''},
 
                 {x: 1600, y: skyArea * 0.7, width: 28, height: 24, velocityX: 0, velocityY: 0,
                 color: '#ff6b9d', alive: true, wingFlap: 0, attackTimer: 0, eyeBlink: 0,
-                homingPower: 0.25, maxSpeed: 5},
+                homingPower: 0.25, maxSpeed: 5, speechTimer: 0, speech: ''},
             ];
         }
 
@@ -515,6 +515,7 @@ function updateFlyingEnemies() {
         flyingEnemy.wingFlap += 0.3;
         flyingEnemy.attackTimer++;
         flyingEnemy.eyeBlink += 0.1;
+        flyingEnemy.speechTimer++;
 
         // ===== 追尾（ホーミング）=====
         const ex = flyingEnemy.x + flyingEnemy.width  / 2;
@@ -550,12 +551,25 @@ function updateFlyingEnemies() {
             flyingEnemy.velocityX = 0;
             flyingEnemy.velocityY = 0;
         }
+        // ★ マウント発言：周期的に表示→少ししたら消す
+           // （近いと頻度アップ）
+           if (flyingEnemy.speechTimer % 180 === 0) {
+             flyingEnemy.speech = mountingComments[Math.floor(Math.random() * mountingComments.length)];
+           }
+           if (flyingEnemy.speechTimer % 180 === 60) {
+             flyingEnemy.speech = '';
+           }
+           if (dist < 240 && flyingEnemy.speechTimer % 120 === 0) {
+             flyingEnemy.speech = mountingComments[Math.floor(Math.random() * mountingComments.length)];
+           }
 
         // ===== プレイヤーに当たったら爆発＆ダメージ＆消滅 =====
         if (checkCollision(flyingEnemy, player)) {
             createExplosion(ex, ey, 70); // 爆発
             flyingEnemy.alive = false;   // 消滅（描画・更新対象から外れる）
             loseLife();                  // ダメージ
+            flyingEnemy.speech = '';
+            flyingEnemy.speechTimer = 0;
         }
     }
 }
@@ -1370,6 +1384,36 @@ function updateBoss() {
                         ctx.beginPath();
                         ctx.arc(flyingEnemy.x + flyingEnemy.width - 5, flyingEnemy.y + 5, 2, 0, Math.PI * 2);
                         ctx.fill();
+                         // ★ スピーチバブル（空中敵）
+                        if (flyingEnemy.speech) {
+                            const bubbleX = flyingEnemy.x - 150;
+                            const bubbleY = flyingEnemy.y - 28;
+                            // フォント指定して計測（地上敵と同様でもOK）
+                            ctx.font = '12px Arial';
+                            const textWidth = ctx.measureText(flyingEnemy.speech).width;
+                            const bubbleWidth = textWidth + 20;
+                            const bubbleHeight = 24;
+
+                            ctx.fillStyle = 'rgba(255, 255, 255, 0.9)';
+                            ctx.fillRect(bubbleX, bubbleY, bubbleWidth, bubbleHeight);
+                            ctx.strokeStyle = '#000';
+                            ctx.lineWidth = 1;
+                            ctx.strokeRect(bubbleX, bubbleY, bubbleWidth, bubbleHeight);
+
+                            // 吹き出しの三角
+                            ctx.beginPath();
+                            ctx.moveTo(bubbleX + bubbleWidth - 6, bubbleY + bubbleHeight);
+                            ctx.lineTo(bubbleX + bubbleWidth + 6, bubbleY + bubbleHeight + 6);
+                            ctx.lineTo(bubbleX + bubbleWidth - 2, bubbleY + bubbleHeight - 2);
+                            ctx.closePath();
+                            ctx.fillStyle = 'rgba(255, 255, 255, 0.9)';
+                            ctx.fill();
+                            ctx.stroke();
+
+                            // テキスト
+                            ctx.fillStyle = '#000';
+                            ctx.fillText(flyingEnemy.speech, bubbleX + 10, bubbleY + 16);
+                        }
                     }
                     
                     // 可愛い小さな口
@@ -1508,6 +1552,8 @@ function updateBoss() {
                 // 既存値がなければデフォルト付与（追尾のため）
                 enemy.homingPower = enemy.homingPower ?? 0.25;
                 enemy.maxSpeed = enemy.maxSpeed ?? 5;
+                enemy.speech = '';
+                enemy.speechTimer = 0;
 
                 enemy.alive = true;
             }, 800); // 爆発演出の余韻
