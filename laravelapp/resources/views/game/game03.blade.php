@@ -177,16 +177,32 @@
         let enemies = createEnemies();
 
         // 空中敵キャラクター - 画面サイズに応じて調整
+       // 空中敵キャラクター（追尾用の homingPower / maxSpeed を追加）
         function createFlyingEnemies() {
-            const skyArea = canvas.height * 0.3; // 画面上部30%のエリア
+            const skyArea = canvas.height * 0.3;
             return [
-                {x: 400, y: skyArea * 0.7, width: 28, height: 24, velocityX: -2, velocityY: 1, color: '#ff6b9d', alive: true, wingFlap: 0, attackTimer: 0, eyeBlink: 0},
-                {x: 700, y: skyArea * 0.5, width: 28, height: 24, velocityX: -2, velocityY: -1, color: '#ff6b9d', alive: true, wingFlap: 0, attackTimer: 0, eyeBlink: 0},
-                {x: 1000, y: skyArea * 0.8, width: 28, height: 24, velocityX: -2, velocityY: 1, color: '#ff6b9d', alive: true, wingFlap: 0, attackTimer: 0, eyeBlink: 0},
-                {x: 1300, y: skyArea * 0.6, width: 28, height: 24, velocityX: -2, velocityY: -1, color: '#ff6b9d', alive: true, wingFlap: 0, attackTimer: 0, eyeBlink: 0},
-                {x: 1600, y: skyArea * 0.7, width: 28, height: 24, velocityX: -2, velocityY: 1, color: '#ff6b9d', alive: true, wingFlap: 0, attackTimer: 0, eyeBlink: 0}
+                {x: 400,  y: skyArea * 0.7, width: 28, height: 24, velocityX: 0, velocityY: 0,
+                color: '#ff6b9d', alive: true, wingFlap: 0, attackTimer: 0, eyeBlink: 0,
+                homingPower: 0.25, maxSpeed: 5},
+
+                {x: 700,  y: skyArea * 0.5, width: 28, height: 24, velocityX: 0, velocityY: 0,
+                color: '#ff6b9d', alive: true, wingFlap: 0, attackTimer: 0, eyeBlink: 0,
+                homingPower: 0.25, maxSpeed: 5},
+
+                {x: 1000, y: skyArea * 0.8, width: 28, height: 24, velocityX: 0, velocityY: 0,
+                color: '#ff6b9d', alive: true, wingFlap: 0, attackTimer: 0, eyeBlink: 0,
+                homingPower: 0.25, maxSpeed: 5},
+
+                {x: 1300, y: skyArea * 0.6, width: 28, height: 24, velocityX: 0, velocityY: 0,
+                color: '#ff6b9d', alive: true, wingFlap: 0, attackTimer: 0, eyeBlink: 0,
+                homingPower: 0.25, maxSpeed: 5},
+
+                {x: 1600, y: skyArea * 0.7, width: 28, height: 24, velocityX: 0, velocityY: 0,
+                color: '#ff6b9d', alive: true, wingFlap: 0, attackTimer: 0, eyeBlink: 0,
+                homingPower: 0.25, maxSpeed: 5},
             ];
         }
+
 
         let flyingEnemies = createFlyingEnemies();
 
@@ -425,34 +441,60 @@
         }
 
         // 空中敵更新
-        function updateFlyingEnemies() {
-            for (let flyingEnemy of flyingEnemies) {
-                if (!flyingEnemy.alive) continue;
+       // 空中敵更新（プレイヤー追尾＆接触で爆発→消滅）
+function updateFlyingEnemies() {
+    for (let flyingEnemy of flyingEnemies) {
+        if (!flyingEnemy.alive) continue;
 
-                flyingEnemy.wingFlap += 0.3;
-                flyingEnemy.attackTimer++;
-                flyingEnemy.eyeBlink += 0.1;
+        // アニメ用
+        flyingEnemy.wingFlap += 0.3;
+        flyingEnemy.attackTimer++;
+        flyingEnemy.eyeBlink += 0.1;
 
-                flyingEnemy.x += flyingEnemy.velocityX;
-                flyingEnemy.y += flyingEnemy.velocityY;
+        // ===== 追尾（ホーミング）=====
+        const ex = flyingEnemy.x + flyingEnemy.width  / 2;
+        const ey = flyingEnemy.y + flyingEnemy.height / 2;
+        const px = player.x      + player.width       / 2;
+        const py = player.y      + player.height      / 2;
 
-                // 画面サイズに応じて飛行範囲を調整
-                const skyTop = 50;
-                const skyBottom = canvas.height * 0.4;
-                if (flyingEnemy.y < skyTop || flyingEnemy.y > skyBottom) {
-                    flyingEnemy.velocityY *= -1;
-                }
+        const dx = px - ex;
+        const dy = py - ey;
+        const dist = Math.hypot(dx, dy) || 1;
 
-                if (flyingEnemy.x < gameState.camera.x - 100) {
-                    flyingEnemy.x = gameState.camera.x + canvas.width + 100;
-                    flyingEnemy.y = skyTop + Math.random() * (skyBottom - skyTop);
-                }
+        // 加速（追尾力）
+        flyingEnemy.velocityX += (dx / dist) * flyingEnemy.homingPower;
+        flyingEnemy.velocityY += (dy / dist) * flyingEnemy.homingPower;
 
-                if (checkCollision(flyingEnemy, player)) {
-                    loseLife();
-                }
-            }
+        // 速度上限制御
+        const sp = Math.hypot(flyingEnemy.velocityX, flyingEnemy.velocityY);
+        if (sp > flyingEnemy.maxSpeed) {
+            flyingEnemy.velocityX = (flyingEnemy.velocityX / sp) * flyingEnemy.maxSpeed;
+            flyingEnemy.velocityY = (flyingEnemy.velocityY / sp) * flyingEnemy.maxSpeed;
         }
+
+        // 位置更新
+        flyingEnemy.x += flyingEnemy.velocityX;
+        flyingEnemy.y += flyingEnemy.velocityY;
+
+        // 画面外に大きく外れたら右端の空に戻す（ゲーム性維持のため）
+        if (flyingEnemy.x < gameState.camera.x - 200 ||
+            flyingEnemy.x > gameState.camera.x + canvas.width + 200 ||
+            flyingEnemy.y < -200 || flyingEnemy.y > canvas.height + 200) {
+            flyingEnemy.x = gameState.camera.x + canvas.width + 150;
+            flyingEnemy.y = 80 + Math.random() * (canvas.height * 0.5);
+            flyingEnemy.velocityX = 0;
+            flyingEnemy.velocityY = 0;
+        }
+
+        // ===== プレイヤーに当たったら爆発＆ダメージ＆消滅 =====
+        if (checkCollision(flyingEnemy, player)) {
+            createExplosion(ex, ey, 70); // 爆発
+            flyingEnemy.alive = false;   // 消滅（描画・更新対象から外れる）
+            loseLife();                  // ダメージ
+        }
+    }
+}
+
 
         // ミサイル発射
         function fireMissile(enemy) {
@@ -671,6 +713,8 @@
                 flyingEnemy.wingFlap = 0;
                 flyingEnemy.attackTimer = 0;
                 flyingEnemy.eyeBlink = 0;
+                flyingEnemy.velocityX = 0;
+                flyingEnemy.velocityY = 0;
             }
             
             for (let coin of coins) {
