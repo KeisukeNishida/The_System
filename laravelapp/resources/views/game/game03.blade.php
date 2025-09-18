@@ -92,6 +92,13 @@
         <button onclick="restartGame()">もう一度プレイ</button>
     </div>
 
+    <div class="game-over" id="gameClear" style="display:none">
+        <div>ゲームクリア！</div>
+        <div>スコア: <span id="clearScore">0</span></div>
+        <button onclick="restartGame()">もう一度プレイ</button>
+    </div>
+
+
     <canvas id="gameCanvas"></canvas>
 
     <script>
@@ -134,7 +141,10 @@
             isFlying: false,
             flySpeed: 8,
             wingFlap: 0,
-            missileTimer: 0
+            missileTimer: 0,
+            lastShotAt: 0,      // 直近の発射時刻（ms）
+            shotInterval: 100,  // 発射間隔（ms）→ 100ms = 10発/秒
+
         };
 
         // キー入力
@@ -203,11 +213,44 @@
             ];
         }
 
+        // ★ ボス生成
+        function spawnBoss() {
+            boss = {
+                x: gameState.camera.x + canvas.width + 200,
+                y: canvas.height * 0.25,
+                width: player.width * 3,   // 主人公の3倍
+                height: player.height * 3,
+                vx: 0, vy: 0,
+                homingPower: 0.08,         // 本体の追尾力（移動）
+                maxSpeed: 3.2,
+                hp: 100,                   // 100ヒットで撃破
+                alive: true,
+                shootTimer: 0,
+                beamRateFrames: 6          // 60fps前提 → 10発/秒
+            };
+            bossSpawned = true;
+        }
+
+        // ★ 一定距離まで進んだら出現
+        function checkBossSpawn() {
+            const triggerX = 1500; // ステージ長に合わせて調整
+            if (!bossSpawned && gameState.camera.x > triggerX) {
+                spawnBoss();
+            }
+        }
+
+
 
         let flyingEnemies = createFlyingEnemies();
 
         // ミサイル配列
         const missiles = [];
+
+        // ★ ラスボス関連
+        let boss = null;
+        const bossBeams = [];
+        let bossSpawned = false;
+
         
         // 爆発エフェクト配列
         const explosions = [];
@@ -287,9 +330,14 @@
                 player.onGround = false;
             }
 
-            // ミサイル攻撃
-            if (keys['KeyX'] && player.missileTimer % 15 === 0) {
-                firePlayerMissile();
+        
+           // ミサイル攻撃（10発/秒に制限）
+            {
+                const now = performance.now();
+                if (keys['KeyX'] && now - player.lastShotAt >= player.shotInterval) {
+                    firePlayerMissile();
+                    player.lastShotAt = now;
+                }
             }
 
             // 重力
@@ -379,6 +427,21 @@
                     }
                 }
 
+                // ★ ボスへの命中判定（1ヒット=HP-1）
+                if (boss && boss.alive && checkCollision(missile, boss)) {
+                    boss.hp -= 1;
+                    createExplosion(missile.x + missile.width/2, missile.y + missile.height/2, 40);
+                    playerMissiles.splice(i, 1);
+
+                    if (boss.hp <= 0) {
+                        boss.alive = false;
+                        createExplosion(boss.x + boss.width/2, boss.y + boss.height/2, 120);
+                        onBossDefeated();
+                    }
+                    break;
+                }
+
+
                 // 空中敵との衝突
                 for (let flyingEnemy of flyingEnemies) {
                     if (flyingEnemy.alive && checkCollision(missile, flyingEnemy)) {
@@ -386,11 +449,13 @@
                         playerMissiles.splice(i, 1);
                         gameState.score += 150;
                         createExplosion(flyingEnemy.x + flyingEnemy.width/2, flyingEnemy.y + flyingEnemy.height/2, 60); // 大爆発
+                        respawnFlyingEnemy(flyingEnemy); // ★ 追加：撃墜ぶんを補充
                         break;
                     }
                 }
             }
         }
+
 
         // 敵更新
         function updateEnemies() {
@@ -624,6 +689,111 @@ function updateFlyingEnemies() {
             }
         }
 
+        // ★ ビーム発射
+function fireBossBeam() {
+    if (!boss || !boss.alive) return;
+    const bx = boss.x + boss.width / 2;
+    const by = boss.y + boss.height / 2;
+    const px = player.x + player.width / 2;
+    const py = player.y + player.height / 2;
+
+    const dx = px - bx, dy = py - by;
+    const d = Math.hypot(dx, dy) || 1;
+
+    const beam = {
+        x: bx, y: by, width: 18, height: 6,
+        vx: (dx / d) * 12, vy: (dy / d) * 12,
+        speed: 12,
+        homingPower: 0.35,   // 追尾の曲がり具合（強め）
+        life: 240,           // 約4秒で消える
+        trail: []
+    };
+    bossBeams.push(beam);
+}
+
+// ★ ビーム更新（追尾＋ダメージ）
+function updateBossBeams() {
+    for (let i = bossBeams.length - 1; i >= 0; i--) {
+        const b = bossBeams[i];
+
+        // 追尾調整
+        const px = player.x + player.width / 2;
+        const py = player.y + player.height / 2;
+        const dx = px - (b.x + b.width / 2);
+        const dy = py - (b.y + b.height / 2);
+        const d = Math.hypot(dx, dy) || 1;
+
+        b.vx += (dx / d) * b.homingPower;
+        b.vy += (dy / d) * b.homingPower;
+
+        // 速度上限制御
+        const sp = Math.hypot(b.vx, b.vy);
+        if (sp > b.speed) {
+            b.vx = (b.vx / sp) * b.speed;
+            b.vy = (b.vy / sp) * b.speed;
+        }
+
+        // 位置・トレイル
+        b.x += b.vx; b.y += b.vy;
+        b.trail.push({ x: b.x, y: b.y });
+        if (b.trail.length > 6) b.trail.shift();
+        b.life--;
+
+        // 画面外や寿命で消去
+        if (b.life <= 0 ||
+            b.x < gameState.camera.x - 200 ||
+            b.x > gameState.camera.x + canvas.width + 200 ||
+            b.y < -200 || b.y > canvas.height + 200) {
+            bossBeams.splice(i, 1);
+            continue;
+        }
+
+        // プレイヤーにヒット（多段即死防止の簡易クールダウン）
+        const now = performance.now();
+        player.lastDamageTime = player.lastDamageTime || 0;
+        if (checkCollision(b, player) && now - player.lastDamageTime > 900) {
+            createExplosion(b.x + b.width / 2, b.y + b.height / 2, 50);
+            bossBeams.splice(i, 1);
+            player.lastDamageTime = now;
+            loseLife();
+            continue;
+        }
+    }
+}
+// ★ ボス更新（本体のゆっくり追尾＋ビーム連射）
+function updateBoss() {
+    if (!boss || !boss.alive) return;
+
+    // 本体追尾（なめらか）
+    const cx = boss.x + boss.width / 2;
+    const cy = boss.y + boss.height / 2;
+    const px = player.x + player.width / 2;
+    const py = player.y + player.height / 2;
+
+    const dx = px - cx, dy = py - cy, dist = Math.hypot(dx, dy) || 1;
+    boss.vx += (dx / dist) * boss.homingPower;
+    boss.vy += (dy / dist) * boss.homingPower;
+
+    const sp = Math.hypot(boss.vx, boss.vy);
+    if (sp > boss.maxSpeed) {
+        boss.vx = (boss.vx / sp) * boss.maxSpeed;
+        boss.vy = (boss.vy / sp) * boss.maxSpeed;
+    }
+
+    boss.x += boss.vx; boss.y += boss.vy;
+
+    // ある程度の空域に制限
+    boss.y = Math.max(40, Math.min(canvas.height * 0.6 - boss.height, boss.y));
+
+    // 連射（10発/秒）
+    boss.shootTimer++;
+    if (boss.shootTimer % boss.beamRateFrames === 0) {
+        fireBossBeam();
+    }
+}
+
+
+
         // カメラ更新
         function updateCamera() {
             const targetX = player.x - canvas.width / 3;
@@ -698,7 +868,7 @@ function updateFlyingEnemies() {
             player.mouthOffset = 0;
             player.isFlying = false;
             player.wingFlap = 0;
-            player.missileTimer = 0;
+            player.lastShotAt = 0;
             
             for (let enemy of enemies) {
                 enemy.alive = true;
@@ -725,9 +895,18 @@ function updateFlyingEnemies() {
             explosions.length = 0;
             playerMissiles.length = 0;
             
-            document.getElementById('gameOver').style.display = 'none';
+             // ★ クリア／ゲームオーバー両方のモーダルを閉じる
+            const overEl  = document.getElementById('gameOver');
+            const clearEl = document.getElementById('gameClear');
+            if (overEl)  overEl.style.display  = 'none';
+            if (clearEl) clearEl.style.display = 'none';
+            boss = null;
+            bossBeams.length = 0;
+            bossSpawned = false;
+            player.lastDamageTime = 0;
         }
 
+        
         // 描画関数
         function draw() {
             ctx.clearRect(0, 0, canvas.width, canvas.height);
@@ -1222,8 +1401,62 @@ function updateFlyingEnemies() {
                     ctx.fill();
                 }
             }
+            // ★ ボスビーム
+        for (const b of bossBeams) {
+            // トレイル
+            for (let i = 0; i < b.trail.length; i++) {
+                const t = b.trail[i];
+                const alpha = (i + 1) / b.trail.length * 0.5;
+                ctx.fillStyle = `rgba(255,0,80,${alpha})`;
+                ctx.fillRect(t.x, t.y, b.width, b.height);
+            }
+            // 本体
+            ctx.fillStyle = '#ff0040';
+            ctx.fillRect(b.x, b.y, b.width, b.height);
+        }
+
+        // ★ ボス本体（邪悪な見た目）
+        if (boss && boss.alive) {
+            // 胴体
+            ctx.fillStyle = '#1b0b1e';
+            ctx.fillRect(boss.x, boss.y, boss.width, boss.height);
+
+            // 角
+            ctx.fillStyle = '#400a40';
+            ctx.beginPath();
+            ctx.moveTo(boss.x + boss.width*0.2, boss.y);
+            ctx.lineTo(boss.x + boss.width*0.3, boss.y - boss.height*0.25);
+            ctx.lineTo(boss.x + boss.width*0.4, boss.y);
+            ctx.closePath(); ctx.fill();
+            ctx.beginPath();
+            ctx.moveTo(boss.x + boss.width*0.8, boss.y);
+            ctx.lineTo(boss.x + boss.width*0.7, boss.y - boss.height*0.25);
+            ctx.lineTo(boss.x + boss.width*0.6, boss.y);
+            ctx.closePath(); ctx.fill();
+
+            // 邪悪な目
+            ctx.fillStyle = '#ff0033';
+            ctx.beginPath(); ctx.arc(boss.x + boss.width*0.3, boss.y + boss.height*0.35, 10, 0, Math.PI*2); ctx.fill();
+            ctx.beginPath(); ctx.arc(boss.x + boss.width*0.7, boss.y + boss.height*0.35, 10, 0, Math.PI*2); ctx.fill();
+
+            // 不気味な口
+            ctx.strokeStyle = '#ff2244'; ctx.lineWidth = 4;
+            ctx.beginPath();
+            ctx.moveTo(boss.x + boss.width*0.25, boss.y + boss.height*0.7);
+            ctx.quadraticCurveTo(boss.x + boss.width*0.5, boss.y + boss.height*0.85, boss.x + boss.width*0.75, boss.y + boss.height*0.7);
+            ctx.stroke();
+        }
 
             ctx.restore();
+            // ★ ボスHPバー（画面固定UI）
+            if (boss && boss.alive) {
+                const barW = 300, barH = 14;
+                const x = (canvas.width - barW) / 2, y = 20;
+                ctx.fillStyle = 'rgba(0,0,0,0.4)'; ctx.fillRect(x, y, barW, barH);
+                ctx.fillStyle = '#ff3355'; ctx.fillRect(x, y, barW * (boss.hp / 100), barH);
+                ctx.strokeStyle = '#ffffff'; ctx.lineWidth = 2; ctx.strokeRect(x, y, barW, barH);
+                ctx.fillStyle = '#fff'; ctx.font = 'bold 14px Arial'; ctx.fillText('BOSS', x, y - 4);
+            }
 
             // UI更新
             document.getElementById('score').textContent = gameState.score;
@@ -1241,6 +1474,9 @@ function updateFlyingEnemies() {
                 updateExplosions();
                 updateCamera();
                 checkCollisions();
+                checkBossSpawn(); // ← 一定地点で出現
+                updateBoss();     // ← 本体追尾＆連射
+                updateBossBeams();// ← ビーム挙動
             }
             
             draw();
@@ -1249,6 +1485,45 @@ function updateFlyingEnemies() {
 
         // ゲーム開始
         gameLoop();
+
+
+        // ★ 追加：空中敵リスポーン（爆発→0.8秒後に右空から復活）
+        function respawnFlyingEnemy(enemy) {
+            const spawnX = gameState.camera.x + canvas.width + 120 + Math.random() * 150;
+            const skyTop = 60;
+            const skyBottom = canvas.height * 0.45;
+            const spawnY = skyTop + Math.random() * (skyBottom - skyTop);
+
+            setTimeout(() => {
+                if (!gameState.gameRunning) return;      // ゲームオーバー中は復活しない
+                if (enemy.alive) return;                 // 既にどこかで復活していたら何もしない
+
+                enemy.x = spawnX;
+                enemy.y = spawnY;
+                enemy.velocityX = 0;
+                enemy.velocityY = 0;
+                enemy.wingFlap = 0;
+                enemy.attackTimer = 0;
+                enemy.eyeBlink = 0;
+                // 既存値がなければデフォルト付与（追尾のため）
+                enemy.homingPower = enemy.homingPower ?? 0.25;
+                enemy.maxSpeed = enemy.maxSpeed ?? 5;
+
+                enemy.alive = true;
+            }, 800); // 爆発演出の余韻
+        }
+        
+        // ★ ボス撃破時の処理
+        function onBossDefeated() {
+            gameState.gameRunning = false;
+            const el = document.getElementById('gameClear');
+            if (el) {
+                document.getElementById('clearScore').textContent = gameState.score;
+                el.style.display = 'block';
+            }
+        }
+
+
     </script>
 </body>
 </html>
