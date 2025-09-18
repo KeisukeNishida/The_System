@@ -139,13 +139,19 @@
 
         // 敵（マウンティング女子）
         const enemies = [
-            {x: 300, y: 270, width: 28, height: 32, velocityX: -3, color: '#ff69b4', alive: true, speechTimer: 0, speech: '', hairBounce: 0},
-            {x: 500, y: 220, width: 28, height: 32, velocityX: -3, color: '#ff69b4', alive: true, speechTimer: 0, speech: '', hairBounce: 0},
-            {x: 800, y: 320, width: 28, height: 32, velocityX: -3, color: '#ff69b4', alive: true, speechTimer: 0, speech: '', hairBounce: 0},
-            {x: 1100, y: 270, width: 28, height: 32, velocityX: -3, color: '#ff69b4', alive: true, speechTimer: 0, speech: '', hairBounce: 0},
-            {x: 1400, y: 320, width: 28, height: 32, velocityX: -3, color: '#ff69b4', alive: true, speechTimer: 0, speech: '', hairBounce: 0},
-            {x: 1650, y: 170, width: 28, height: 32, velocityX: -3, color: '#ff69b4', alive: true, speechTimer: 0, speech: '', hairBounce: 0}
+            {x: 300, y: 270, width: 28, height: 32, velocityX: -6, color: '#ff69b4', alive: true, speechTimer: 0, speech: '', hairBounce: 0, missileTimer: 0},
+            {x: 500, y: 220, width: 28, height: 32, velocityX: -6, color: '#ff69b4', alive: true, speechTimer: 0, speech: '', hairBounce: 0, missileTimer: 0},
+            {x: 800, y: 320, width: 28, height: 32, velocityX: -6, color: '#ff69b4', alive: true, speechTimer: 0, speech: '', hairBounce: 0, missileTimer: 0},
+            {x: 1100, y: 270, width: 28, height: 32, velocityX: -6, color: '#ff69b4', alive: true, speechTimer: 0, speech: '', hairBounce: 0, missileTimer: 0},
+            {x: 1400, y: 320, width: 28, height: 32, velocityX: -6, color: '#ff69b4', alive: true, speechTimer: 0, speech: '', hairBounce: 0, missileTimer: 0},
+            {x: 1650, y: 170, width: 28, height: 32, velocityX: -6, color: '#ff69b4', alive: true, speechTimer: 0, speech: '', hairBounce: 0, missileTimer: 0}
         ];
+
+        // ミサイル配列
+        const missiles = [];
+        
+        // 爆発エフェクト配列
+        const explosions = [];
 
         // マウント発言集
         const mountingComments = [
@@ -236,12 +242,13 @@
             for (let enemy of enemies) {
                 if (!enemy.alive) continue;
 
-                // 素早い動き
+                // 高速移動
                 enemy.x += enemy.velocityX;
                 enemy.hairBounce += 0.2;
 
                 // スピーチタイマー更新
                 enemy.speechTimer++;
+                enemy.missileTimer++;
                 
                 // 定期的にマウント発言
                 if (enemy.speechTimer % 180 === 0) {
@@ -255,8 +262,18 @@
 
                 // プレイヤーが近くにいるとより頻繁に発言
                 const distanceToPlayer = Math.abs(enemy.x - player.x);
-                if (distanceToPlayer < 150 && enemy.speechTimer % 120 === 0) {
-                    enemy.speech = mountingComments[Math.floor(Math.random() * mountingComments.length)];
+                if (distanceToPlayer < 200) {
+                    if (enemy.speechTimer % 120 === 0) {
+                        enemy.speech = mountingComments[Math.floor(Math.random() * mountingComments.length)];
+                    }
+                    
+                    // ミサイル攻撃 - 1秒ごとに5発連続
+                    if (enemy.missileTimer % 60 === 0) { // 1秒 = 60フレーム
+                        // 5発連続発射
+                        for (let i = 0; i < 5; i++) {
+                            setTimeout(() => fireMissile(enemy), i * 80); // 0.08秒間隔で5発
+                        }
+                    }
                 }
 
                 // プラットフォームの端で向きを変える
@@ -274,6 +291,147 @@
                 if (!onPlatform || enemy.x <= 0) {
                     enemy.velocityX *= -1;
                 }
+            }
+        }
+
+        // ミサイル発射
+        function fireMissile(enemy) {
+            const missile = {
+                x: enemy.x - 35, // 敵の左側から発射
+                y: enemy.y + enemy.height / 2,
+                width: 32,
+                height: 12,
+                velocityX: -8, // 左向きに初期速度
+                velocityY: 0,
+                active: true,
+                trail: [],
+                rotation: 0,
+                homingPower: 0.15,
+                speed: 10
+            };
+            
+            missiles.push(missile);
+        }
+
+        // 爆発エフェクト作成
+        function createExplosion(x, y, size = 60) {
+            const explosion = {
+                x: x,
+                y: y,
+                size: 0,
+                maxSize: size,
+                particles: [],
+                timer: 0,
+                maxTimer: 30
+            };
+            
+            // パーティクルを作成
+            for (let i = 0; i < 15; i++) {
+                explosion.particles.push({
+                    x: x,
+                    y: y,
+                    velocityX: (Math.random() - 0.5) * 10,
+                    velocityY: (Math.random() - 0.5) * 10,
+                    size: Math.random() * 6 + 2,
+                    life: 1.0,
+                    color: Math.random() < 0.5 ? '#ff6600' : '#ffaa00'
+                });
+            }
+            
+            explosions.push(explosion);
+        }
+
+        // 爆発エフェクト更新
+        function updateExplosions() {
+            for (let i = explosions.length - 1; i >= 0; i--) {
+                const explosion = explosions[i];
+                explosion.timer++;
+                
+                // 爆発の大きさを変化
+                if (explosion.timer < 10) {
+                    explosion.size = (explosion.timer / 10) * explosion.maxSize;
+                } else {
+                    explosion.size = explosion.maxSize * (1 - (explosion.timer - 10) / 20);
+                }
+                
+                // パーティクル更新
+                for (let j = explosion.particles.length - 1; j >= 0; j--) {
+                    const particle = explosion.particles[j];
+                    particle.x += particle.velocityX;
+                    particle.y += particle.velocityY;
+                    particle.velocityY += 0.3; // 重力
+                    particle.life -= 0.03;
+                    
+                    if (particle.life <= 0) {
+                        explosion.particles.splice(j, 1);
+                    }
+                }
+                
+                // 爆発を削除
+                if (explosion.timer >= explosion.maxTimer) {
+                    explosions.splice(i, 1);
+                }
+            }
+        }
+
+        // ミサイル更新（ホーミング機能付き）
+        function updateMissiles() {
+            for (let i = missiles.length - 1; i >= 0; i--) {
+                const missile = missiles[i];
+                
+                if (!missile.active) {
+                    missiles.splice(i, 1);
+                    continue;
+                }
+                
+                // ホーミング（プレイヤーを追尾）
+                const dx = player.x + player.width/2 - (missile.x + missile.width/2);
+                const dy = player.y + player.height/2 - (missile.y + missile.height/2);
+                const distance = Math.sqrt(dx * dx + dy * dy);
+                
+                if (distance > 0) {
+                    // 現在の速度に追尾力を加える
+                    missile.velocityX += (dx / distance) * missile.homingPower;
+                    missile.velocityY += (dy / distance) * missile.homingPower;
+                    
+                    // 速度を制限
+                    const currentSpeed = Math.sqrt(missile.velocityX * missile.velocityX + missile.velocityY * missile.velocityY);
+                    if (currentSpeed > missile.speed) {
+                        missile.velocityX = (missile.velocityX / currentSpeed) * missile.speed;
+                        missile.velocityY = (missile.velocityY / currentSpeed) * missile.speed;
+                    }
+                }
+                
+                // トレイル効果（大きくした）
+                missile.trail.push({x: missile.x, y: missile.y});
+                if (missile.trail.length > 8) {
+                    missile.trail.shift();
+                }
+                
+                // 位置更新
+                missile.x += missile.velocityX;
+                missile.y += missile.velocityY;
+                
+                // 回転角度を計算（ミサイルが向いている方向）
+                missile.rotation = Math.atan2(missile.velocityY, missile.velocityX);
+                
+                // 画面外で削除
+                if (missile.x < gameState.camera.x - 100 || 
+                    missile.x > gameState.camera.x + canvas.width + 100 ||
+                    missile.y < -50 || missile.y > canvas.height + 50) {
+                    missiles.splice(i, 1);
+                    continue;
+                }
+                
+                // プレイヤーとの衝突のみチェック（プラットフォームはすり抜け）
+                if (checkCollision(missile, player)) {
+                    createExplosion(missile.x + missile.width/2, missile.y + missile.height/2, 80);
+                    missiles.splice(i, 1);
+                    loseLife();
+                    continue;
+                }
+                
+                // プラットフォームとの衝突は削除（すり抜け）
             }
         }
 
@@ -353,7 +511,14 @@
                 enemy.speechTimer = 0;
                 enemy.speech = '';
                 enemy.hairBounce = 0;
+                enemy.missileTimer = 0;
             }
+            
+            // ミサイルをクリア
+            missiles.length = 0;
+            
+            // 爆発をクリア
+            explosions.length = 0;
             
             // コインをリセット
             for (let coin of coins) {
@@ -416,6 +581,112 @@
                 }
             }
 
+            // ミサイル描画（リアルなデザイン・左向き）
+            for (let missile of missiles) {
+                if (missile.active) {
+                    // トレイル（軌跡）- 煙のような効果
+                    for (let i = 0; i < missile.trail.length; i++) {
+                        const trailPoint = missile.trail[i];
+                        const alpha = (i + 1) / missile.trail.length * 0.4;
+                        const size = 8 - (i * 0.8);
+                        ctx.fillStyle = `rgba(150, 150, 150, ${alpha})`;
+                        ctx.beginPath();
+                        ctx.arc(trailPoint.x + missile.width/2, trailPoint.y + missile.height/2, size, 0, Math.PI * 2);
+                        ctx.fill();
+                    }
+                    
+                    // ミサイル本体（リアルなロケット形状・左向き）
+                    ctx.fillStyle = '#2c3e50';
+                    ctx.fillRect(missile.x + 4, missile.y + 2, missile.width - 8, missile.height - 4);
+                    
+                    // ミサイルの先端（円錐形・左向き）
+                    ctx.fillStyle = '#e74c3c';
+                    ctx.beginPath();
+                    ctx.moveTo(missile.x, missile.y + missile.height/2); // 左端の尖った先端
+                    ctx.lineTo(missile.x + 8, missile.y + 2);
+                    ctx.lineTo(missile.x + 8, missile.y + missile.height - 2);
+                    ctx.closePath();
+                    ctx.fill();
+                    
+                    // ミサイルの胴体のディテール
+                    ctx.fillStyle = '#34495e';
+                    ctx.fillRect(missile.x + 8, missile.y + 3, missile.width - 16, 2);
+                    ctx.fillRect(missile.x + 8, missile.y + missile.height - 5, missile.width - 16, 2);
+                    
+                    // フィン（翼）・左向き
+                    ctx.fillStyle = '#7f8c8d';
+                    // 上のフィン
+                    ctx.beginPath();
+                    ctx.moveTo(missile.x + missile.width - 6, missile.y + 2);
+                    ctx.lineTo(missile.x + missile.width - 2, missile.y - 2);
+                    ctx.lineTo(missile.x + missile.width - 10, missile.y + 1);
+                    ctx.closePath();
+                    ctx.fill();
+                    
+                    // 下のフィン
+                    ctx.beginPath();
+                    ctx.moveTo(missile.x + missile.width - 6, missile.y + missile.height - 2);
+                    ctx.lineTo(missile.x + missile.width - 2, missile.y + missile.height + 2);
+                    ctx.lineTo(missile.x + missile.width - 10, missile.y + missile.height - 1);
+                    ctx.closePath();
+                    ctx.fill();
+                    
+                    // ロケット噴射（後部の炎・右側）
+                    ctx.fillStyle = '#3498db';
+                    ctx.fillRect(missile.x + missile.width, missile.y + 4, 8, 4);
+                    ctx.fillStyle = '#ffffff';
+                    ctx.fillRect(missile.x + missile.width + 2, missile.y + 5, 4, 2);
+                    
+                    // 高温ジェット炎
+                    ctx.fillStyle = '#ffaa00';
+                    ctx.fillRect(missile.x + missile.width + 4, missile.y + 5, 8, 2);
+                    ctx.fillStyle = '#ff6600';
+                    ctx.fillRect(missile.x + missile.width + 10, missile.y + 5.5, 6, 1);
+                    
+                    // 警告ストライプ
+                    ctx.fillStyle = '#f1c40f';
+                    for (let stripe = 0; stripe < 3; stripe++) {
+                        ctx.fillRect(missile.x + 12 + stripe * 4, missile.y + 4, 2, 4);
+                    }
+                }
+            }
+
+            // 爆発エフェクト描画
+            for (let explosion of explosions) {
+                // メインの爆発
+                const gradient = ctx.createRadialGradient(
+                    explosion.x, explosion.y, 0,
+                    explosion.x, explosion.y, explosion.size
+                );
+                gradient.addColorStop(0, 'rgba(255, 255, 255, 0.8)');
+                gradient.addColorStop(0.3, 'rgba(255, 200, 0, 0.6)');
+                gradient.addColorStop(0.7, 'rgba(255, 100, 0, 0.4)');
+                gradient.addColorStop(1, 'rgba(255, 0, 0, 0)');
+                
+                ctx.fillStyle = gradient;
+                ctx.beginPath();
+                ctx.arc(explosion.x, explosion.y, explosion.size, 0, Math.PI * 2);
+                ctx.fill();
+                
+                // パーティクル
+                for (let particle of explosion.particles) {
+                    const alpha = particle.life;
+                    ctx.fillStyle = particle.color.replace(')', `, ${alpha})`).replace('rgb', 'rgba');
+                    ctx.beginPath();
+                    ctx.arc(particle.x, particle.y, particle.size * particle.life, 0, Math.PI * 2);
+                    ctx.fill();
+                }
+                
+                // 衝撃波
+                if (explosion.timer < 15) {
+                    ctx.strokeStyle = `rgba(255, 255, 255, ${0.5 - explosion.timer/30})`;
+                    ctx.lineWidth = 3;
+                    ctx.beginPath();
+                    ctx.arc(explosion.x, explosion.y, explosion.size * 1.5, 0, Math.PI * 2);
+                    ctx.stroke();
+                }
+            }
+
             // 敵描画（マウンティング女子）
             for (let enemy of enemies) {
                 if (enemy.alive) {
@@ -427,29 +698,29 @@
                     ctx.fillStyle = '#ffdbac';
                     ctx.fillRect(enemy.x + 4, enemy.y, 20, 16);
                     
-                    // 髪（ピンク、揺れる）
+                    // 髪（ピンク、揺れる）- 左向き
                     ctx.fillStyle = '#ff1493';
                     const hairOffset = Math.sin(enemy.hairBounce) * 2;
                     ctx.fillRect(enemy.x + 2, enemy.y - 4, 24, 12);
-                    ctx.fillRect(enemy.x + 1, enemy.y + 4, 6, 8 + hairOffset);
-                    ctx.fillRect(enemy.x + 21, enemy.y + 4, 6, 8 - hairOffset);
+                    ctx.fillRect(enemy.x + 21, enemy.y + 4, 6, 8 + hairOffset); // 右側の髪
+                    ctx.fillRect(enemy.x + 1, enemy.y + 4, 6, 8 - hairOffset);  // 左側の髪
                     
-                    // 目（きつい目つき）
+                    // 目（きつい目つき）- 左向き
                     ctx.fillStyle = 'white';
                     ctx.fillRect(enemy.x + 6, enemy.y + 4, 4, 3);
                     ctx.fillRect(enemy.x + 18, enemy.y + 4, 4, 3);
                     ctx.fillStyle = 'black';
-                    ctx.fillRect(enemy.x + 7, enemy.y + 5, 2, 2);
-                    ctx.fillRect(enemy.x + 19, enemy.y + 5, 2, 2);
+                    ctx.fillRect(enemy.x + 6, enemy.y + 5, 2, 2);  // 左向きの瞳
+                    ctx.fillRect(enemy.x + 18, enemy.y + 5, 2, 2); // 左向きの瞳
                     
-                    // 眉毛（怒った表情）
+                    // 眉毛（怒った表情）- 左向き
                     ctx.strokeStyle = '#8B0000';
                     ctx.lineWidth = 2;
                     ctx.beginPath();
-                    ctx.moveTo(enemy.x + 6, enemy.y + 3);
-                    ctx.lineTo(enemy.x + 10, enemy.y + 2);
-                    ctx.moveTo(enemy.x + 18, enemy.y + 2);
-                    ctx.lineTo(enemy.x + 22, enemy.y + 3);
+                    ctx.moveTo(enemy.x + 6, enemy.y + 2);
+                    ctx.lineTo(enemy.x + 10, enemy.y + 3);  // 左眉を調整
+                    ctx.moveTo(enemy.x + 18, enemy.y + 3);
+                    ctx.lineTo(enemy.x + 22, enemy.y + 2); // 右眉を調整
                     ctx.stroke();
                     
                     // 口（嫌な笑み）
@@ -459,16 +730,25 @@
                     ctx.arc(enemy.x + 14, enemy.y + 12, 3, 0, Math.PI);
                     ctx.stroke();
                     
-                    // アクセサリー（ピアス）
-                    ctx.fillStyle = '#ffd700';
-                    ctx.beginPath();
-                    ctx.arc(enemy.x + 3, enemy.y + 8, 2, 0, Math.PI * 2);
-                    ctx.arc(enemy.x + 25, enemy.y + 8, 2, 0, Math.PI * 2);
-                    ctx.fill();
+                    // 武器（バズーカ）- 左向き
+                    ctx.fillStyle = '#2c3e50';
+                    ctx.fillRect(enemy.x - 25, enemy.y + 10, 20, 12); // 左側に配置
+                    
+                    // バズーカの筒 - 左向き
+                    ctx.fillStyle = '#34495e';
+                    ctx.fillRect(enemy.x - 30, enemy.y + 12, 15, 8); // 左側に配置
+                    
+                    // バズーカのグリップ - 左向き
+                    ctx.fillStyle = '#8b4513';
+                    ctx.fillRect(enemy.x - 16, enemy.y + 18, 8, 6); // 左側に配置
+                    
+                    // バズーカの照準 - 左向き
+                    ctx.fillStyle = '#e74c3c';
+                    ctx.fillRect(enemy.x - 33, enemy.y + 14, 3, 4); // 左側に配置
                     
                     // スピーチバブル描画
                     if (enemy.speech) {
-                        const bubbleX = enemy.x + enemy.width + 10;
+                        const bubbleX = enemy.x - 150; // 左側に配置
                         const bubbleY = enemy.y - 20;
                         const bubbleWidth = ctx.measureText(enemy.speech).width + 20;
                         const bubbleHeight = 25;
@@ -480,11 +760,11 @@
                         ctx.lineWidth = 1;
                         ctx.strokeRect(bubbleX, bubbleY, bubbleWidth, bubbleHeight);
                         
-                        // 吹き出しの尻尾
+                        // 吹き出しの尻尾 - 左向き用
                         ctx.beginPath();
-                        ctx.moveTo(bubbleX, bubbleY + 15);
-                        ctx.lineTo(bubbleX - 8, bubbleY + 10);
-                        ctx.lineTo(bubbleX, bubbleY + 5);
+                        ctx.moveTo(bubbleX + bubbleWidth, bubbleY + 15);
+                        ctx.lineTo(bubbleX + bubbleWidth + 8, bubbleY + 10);
+                        ctx.lineTo(bubbleX + bubbleWidth, bubbleY + 5);
                         ctx.fillStyle = 'rgba(255, 255, 255, 0.9)';
                         ctx.fill();
                         ctx.stroke();
@@ -581,6 +861,8 @@
             if (gameState.gameRunning) {
                 updatePlayer();
                 updateEnemies();
+                updateMissiles();
+                updateExplosions();
                 updateCamera();
                 checkCollisions();
             }
