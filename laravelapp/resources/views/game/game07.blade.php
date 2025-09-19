@@ -173,7 +173,12 @@
             },
             keys: {},
             boss: null,
-            bossBeams: []
+            bossBeams: [],
+            bossWarningActive: false,
+            bossWarningStart: 0,
+            bossPending: false,          // 警告後にボスを出す予約フラグ
+            bossTriggerScore: 100        // 出現スコア（必要なら変更可）
+
             };
         
         
@@ -1062,9 +1067,26 @@ function drawWordCard(vocab, centerX, top, cardW = 160, cardH = 110) {
 
     ctx.restore();
     }
-
+    // ボス出現の流れ：条件到達→3秒WARNING→出現
     function spawnBossIfReady() {
-    if (!gameState.boss && gameState.score >= 100) {
+    const now = performance.now();
+
+    // 条件到達＆未処理なら警告を開始
+    if (!gameState.boss && !gameState.bossWarningActive && !gameState.bossPending &&
+        gameState.score >= gameState.bossTriggerScore) {
+        gameState.bossWarningActive = true;
+        gameState.bossWarningStart = now;
+        gameState.bossPending = true;
+    }
+
+    // 警告から3秒経過でボス出現＆通常敵一掃
+    if (gameState.bossWarningActive && now - gameState.bossWarningStart >= 3000) {
+        gameState.bossWarningActive = false;
+        gameState.bossPending = false;
+
+        gameState.enemies = [];
+        gameState.enemyBeams = [];
+
         gameState.boss = new Boss();
     }
     }
@@ -1223,6 +1245,32 @@ function updateEnemyBeams() {
         ctx.fillStyle = '#fff';
         ctx.fillText('BOSS', canvas.width / 2, y + barH + 14);
         }
+
+        // （D）WARNINGオーバーレイ
+        function drawWarningOverlay() {
+        if (!gameState.bossWarningActive) return;
+
+        const t = performance.now() / 1000;
+        const blink = (Math.sin(t * 6) + 1) / 2; // 点滅
+        const alpha = 0.4 + 0.6 * blink;
+
+        ctx.save();
+        // うっすら暗く
+        ctx.fillStyle = 'rgba(0,0,0,0.35)';
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+        // 大きな赤文字
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.font = 'bold 52px Arial';
+        ctx.fillStyle = `rgba(255, 0, 0, ${alpha})`;
+        ctx.strokeStyle = `rgba(0,0,0, ${Math.min(0.8, alpha)})`;
+        ctx.lineWidth = 6;
+        ctx.strokeText('WARNING', canvas.width / 2, canvas.height / 2);
+        ctx.fillText('WARNING', canvas.width / 2, canvas.height / 2);
+        ctx.restore();
+        }
+
  
     // 衝突判定
     function checkCollisions() {
@@ -1367,95 +1415,100 @@ function updateEnemyBeams() {
     
     // 敵生成
     function spawnEnemy() {
-        try {
-            // 敵の生成頻度を少し下げて重なりを防ぐ
-            if (Math.random() < 0.015 && gameState.enemies.length < 4) {
-                const newEnemy = new Enemy();
-                gameState.enemies.push(newEnemy);
-            }
-        } catch (error) {
-            console.error('敵生成エラー:', error.message);
+    try {
+        if (gameState.boss || gameState.bossWarningActive) return; // ← 追加ポイント
+
+        if (Math.random() < 0.015 && gameState.enemies.length < 4) {
+        const newEnemy = new Enemy();
+        gameState.enemies.push(newEnemy);
         }
+    } catch (error) {
+        console.error('敵生成エラー:', error.message);
+    }
     }
     
     // ゲームループ
-    function gameLoop() {
-        try {
-            if (!gameState.gameRunning) return;
+function gameLoop() {
+    try {
+        if (!gameState.gameRunning) return;
 
-            gameState.animationTime++;
+        gameState.animationTime++;
 
-            if (gameState.life <= 0) { gameOver(); return; }
+        if (gameState.life <= 0) { gameOver(); return; }
 
-            ctx.clearRect(0, 0, canvas.width, canvas.height);
-            drawStars();
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        drawStars();
 
-            // 通常敵の生成・更新・描画
-            spawnEnemy();
-            gameState.enemies = gameState.enemies.filter(enemy => {
+        // 通常敵の生成・更新・描画
+        spawnEnemy();
+        gameState.enemies = gameState.enemies.filter(enemy => {
             if (enemy && enemy.draw && enemy.update) {
                 enemy.draw();
                 return enemy.update();
             }
             return false;
-            });
+        });
 
-            // ★ スコア到達でボス出現
-            spawnBossIfReady();
+        // ★ スコア到達でボス出現
+        spawnBossIfReady();
 
-            // ★ ボス更新・描画
-            if (gameState.boss) {
+        // ★ ボス更新・描画
+        if (gameState.boss) {
             const now = performance.now();
             gameState.boss.update(now);
             gameState.boss.draw();
-            }
+        }
 
-            // ミサイル更新・描画
-            gameState.missiles = gameState.missiles.filter(missile => {
+        // ミサイル更新・描画
+        gameState.missiles = gameState.missiles.filter(missile => {
             if (missile && missile.draw && missile.update) {
                 missile.draw();
                 return missile.update();
             }
             return false;
-            });
+        });
 
-            // 通常敵ビーム
-            updateEnemyBeams();
+        // 通常敵ビーム
+        updateEnemyBeams();
 
-            // ★ ボスのビーム
-            updateBossBeams();
+        // ★ ボスのビーム
+        updateBossBeams();
 
-            // 衝突
-            checkCollisions();
-            checkPlayerEnemyCollisions();
+        // 衝突
+        checkCollisions();
+        checkPlayerEnemyCollisions();
 
-            // 爆発
-            gameState.explosions = gameState.explosions.filter(ex => {
+        // 爆発
+        gameState.explosions = gameState.explosions.filter(ex => {
             if (ex && ex.draw && ex.update) { ex.draw(); return ex.update(); }
             return false;
-            });
+        });
 
-            // メッセージ
-            gameState.messages = gameState.messages.filter(msg => {
+        // メッセージ
+        gameState.messages = gameState.messages.filter(msg => {
             if (msg && msg.draw && msg.update) { msg.draw(); return msg.update(); }
             return false;
-            });
+        });
 
-            // プレイヤー
-            updatePlayer();
-            drawPlayer();
+        // プレイヤー
+        updatePlayer();
+        drawPlayer();
 
-            // ★ ボスHPバー（最後にUIとして）
-            drawBossHPBar();
+        // ★ ボスHPバー（最後にUIとして）
+        drawBossHPBar();
 
-            requestAnimationFrame(gameLoop);
-        } catch (error) {
-            console.error('ゲームループエラー詳細:', error.message);
-            console.error('スタックトレース:', error.stack);
-            console.error('gameState:', gameState);
-            gameState.gameRunning = false;
-        }
-        }
+        // ★ WARNINGオーバーレイ（最前面に出したいので一番最後に描く）
+        drawWarningOverlay();
+
+        requestAnimationFrame(gameLoop);
+    } catch (error) {
+        console.error('ゲームループエラー詳細:', error.message);
+        console.error('スタックトレース:', error.stack);
+        console.error('gameState:', gameState);
+        gameState.gameRunning = false;
+    }
+}
+
 
     
     // ゲームオーバー
@@ -1487,7 +1540,11 @@ function updateEnemyBeams() {
             keys: {},
             // 追加
             boss: null,
-            bossBeams: []
+            bossBeams: [],
+            bossWarningActive: false,
+            bossWarningStart: 0,
+            bossPending: false,
+            bossTriggerScore: 100,
         };
         currentVocabIndex = 0;
         bossVocabIndex = 0;
