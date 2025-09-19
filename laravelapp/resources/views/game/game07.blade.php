@@ -171,8 +171,11 @@
                 width: 50,
                 height: 40
             },
-            keys: {}
-        };
+            keys: {},
+            boss: null,
+            bossBeams: []
+            };
+        
         
         
         // 英単語データ（30個）
@@ -211,6 +214,20 @@
         
         let currentVocabIndex = 0;
         
+        // 難単語（ボス用）
+        const hardVocabularyData = [
+        { word:"Ephemeral",      options:["永続的","短命の","壮大な","無害な"], correct:2 },
+        { word:"Obfuscate",      options:["明確にする","難読化する","保存する","模倣する"], correct:2 },
+        { word:"Ubiquitous",     options:["遍在する","希少な","不安定な","過剰な"], correct:1 },
+        { word:"Meticulous",     options:["大雑把な","用心深い","迅速な","攻撃的な"], correct:2 },
+        { word:"Conundrum",      options:["解決策","難問","伝統","誤解"],               correct:2 },
+        { word:"Ineffable",      options:["言葉にできない","避けられる","明白な","矛盾した"], correct:1 },
+        { word:"Obsequious",     options:["横柄な","忠実な","へつらう","退屈な"],         correct:3 },
+        { word:"Quintessential", options:["二流の","典型的な","曖昧な","過小評価の"],       correct:2 },
+        ];
+        let bossVocabIndex = 0;
+
+
         // 星空初期化
         function initStars() {
             gameState.stars = [];
@@ -500,132 +517,15 @@ update() {
 
   ctx.restore();
 }
-    }
-    }
+}
+}
 
-        
-        // メッセージクラス
-        class FloatingMessage {
-            constructor(x, y, text, color) {
-                this.x = x;
-                this.y = y;
-                this.text = text;
-                this.color = color;
-                this.life = 30; // 0.5秒 (60fps基準で30フレーム)
-                this.maxLife = 30;
-                this.startY = y;
-            }
-            
-            update() {
-                this.life--;
-                // メッセージが上に浮上
-                this.y = this.startY - (this.maxLife - this.life) * 2;
-                return this.life > 0;
-            }
-            
-            draw() {
-                const alpha = this.life / this.maxLife;
-                ctx.save();
-                ctx.globalAlpha = alpha;
-                ctx.font = 'bold 20px Arial';
-                ctx.fillStyle = this.color;
-                ctx.textAlign = 'center';
-                ctx.strokeStyle = '#000000';
-                ctx.lineWidth = 2;
-                
-                // 文字の縁取り
-                ctx.strokeText(this.text, this.x, this.y);
-                // 文字本体
-                ctx.fillText(this.text, this.x, this.y);
-                
-                ctx.restore();
-            }
-        }
-        class Explosion {
-            constructor(x, y) {
-                this.x = x;
-                this.y = y;
-                this.radius = 10;
-                this.maxRadius = 40;
-                this.life = 30;
-                this.maxLife = 30;
-            }
-            
-            update() {
-                this.life--;
-                this.radius = (this.maxRadius * (this.maxLife - this.life)) / this.maxLife;
-                return this.life > 0;
-            }
-            
-            draw() {
-                const alpha = this.life / this.maxLife;
-                ctx.save();
-                ctx.globalAlpha = alpha;
-                
-                // 外側の爆発
-                ctx.fillStyle = '#ff6600';
-                ctx.beginPath();
-                ctx.arc(this.x, this.y, this.radius, 0, Math.PI * 2);
-                ctx.fill();
-                
-                // 内側の爆発
-                ctx.fillStyle = '#ffff00';
-                ctx.beginPath();
-                ctx.arc(this.x, this.y, this.radius * 0.6, 0, Math.PI * 2);
-                ctx.fill();
-                
-                // 中心の爆発
-                ctx.fillStyle = '#ffffff';
-                ctx.beginPath();
-                ctx.arc(this.x, this.y, this.radius * 0.3, 0, Math.PI * 2);
-                ctx.fill();
-                
-                ctx.restore();
-            }
-        }
-        // === 番号別カラー＆数字入りミサイル ===
-class Missile {
-  constructor(x, y, number) {
-    this.x = x;
-    this.y = y;
-    this.width = 22;   // 少し大きくして数字を見やすく
-    this.height = 34;
-    this.speed = 9;
-    this.number = number;
+function drawWordCard(vocab, centerX, top, cardW = 160, cardH = 110) {
+  const radius = 12;
+  const left = centerX - cardW / 2;
 
-    // 番号→色パレット
-    const palette = {
-      1: { base: '#e53935', light: '#ff7673', dark: '#b71c1c' }, // 赤
-      2: { base: '#29b6f6', light: '#7fd3ff', dark: '#0288d1' }, // 水色
-      3: { base: '#ffa726', light: '#ffcc80', dark: '#ef6c00' }, // オレンジ
-      4: { base: '#26c684', light: '#7be0b3', dark: '#1b9e68' }, // 緑
-      default: { base: '#9e9e9e', light: '#cfcfcf', dark: '#616161' }
-    };
-    this.colors = palette[number] || palette.default;
-  }
-
-  update() {
-    this.y -= this.speed;
-    return this.y > -60;
-  }
-
-  draw() {
-    const c = this.colors;
-    const { x, y, width: w, height: h } = this;
-
-    // ボディのグラデ
-    const g = ctx.createLinearGradient(x, y, x, y + h);
-    g.addColorStop(0, c.light);
-    g.addColorStop(0.5, c.base);
-    g.addColorStop(1, c.dark);
-
-    ctx.save();
-
-    // 角丸ボディ
-    ctx.fillStyle = g;
-    ctx.strokeStyle = '#111';
-    ctx.lineWidth = 1.2;
-    const r = 5;
+  // 角丸
+  const rr = (x, y, w, h, r) => {
     ctx.beginPath();
     ctx.moveTo(x + r, y);
     ctx.lineTo(x + w - r, y);
@@ -637,248 +537,541 @@ class Missile {
     ctx.lineTo(x, y + r);
     ctx.quadraticCurveTo(x, y, x + r, y);
     ctx.closePath();
-    ctx.fill();
-    ctx.stroke();
+  };
 
-    // ノーズ（先端）
-    ctx.beginPath();
-    ctx.moveTo(x + w / 2, y - 10);
-    ctx.lineTo(x + w, y + 4);
-    ctx.lineTo(x, y + 4);
-    ctx.closePath();
-    ctx.fillStyle = c.base;
-    ctx.fill();
-    ctx.stroke();
-
-    // フィン（左右）
-    ctx.fillStyle = c.dark;
-    ctx.beginPath(); // 左
-    ctx.moveTo(x, y + h * 0.55);
-    ctx.lineTo(x - 10, y + h * 0.75);
-    ctx.lineTo(x, y + h * 0.8);
-    ctx.closePath();
-    ctx.fill();
-
-    ctx.beginPath(); // 右
-    ctx.moveTo(x + w, y + h * 0.55);
-    ctx.lineTo(x + w + 10, y + h * 0.75);
-    ctx.lineTo(x + w, y + h * 0.8);
-    ctx.closePath();
-    ctx.fill();
-
-    // 中央の番号（アウトライン付きで視認性UP）
-    ctx.font = 'bold 18px Arial';
-    ctx.textAlign = 'center';
-    ctx.textBaseline = 'middle';
-    ctx.lineWidth = 3;
-    ctx.strokeStyle = 'rgba(0,0,0,0.5)';
-    ctx.strokeText(String(this.number), x + w / 2, y + h / 2);
-    ctx.fillStyle = '#ffffff';
-    ctx.fillText(String(this.number), x + w / 2, y + h / 2);
-
-    // 後部の噴射炎（ちょい演出）
-    const flameH = 10 + Math.random() * 6;
-    const flameW = 8;
-    ctx.beginPath();
-    ctx.moveTo(x + w / 2, y + h + flameH);
-    ctx.lineTo(x + w / 2 - flameW / 2, y + h);
-    ctx.lineTo(x + w / 2 + flameW / 2, y + h);
-    ctx.closePath();
-    const fg = ctx.createLinearGradient(x, y + h, x, y + h + flameH);
-    fg.addColorStop(0, 'rgba(255,255,255,0.95)');
-    fg.addColorStop(1, 'rgba(255,180,0,0.85)');
-    ctx.fillStyle = fg;
-    ctx.fill();
-
-    ctx.restore();
-  }
-}
-
-        
-        // プレイヤー描画
-        // ===== 主役キャラ：赤目ぐるぐる＋触角ウネウネ版 =====
-// ===== 主役キャラ：羽ばたき激化（残像つき）版 =====
-function drawPlayer() {
-  const p = gameState.player;
-  const t = gameState.animationTime;
-  const time = t * (1/60);
-
+  // 背景
   ctx.save();
-
-  // ── 羽ばたきパラメータ（激しめ） ──
-  // 周波数を上げ、角度・スケールの振れ幅も増やす
-  const flapBase = Math.sin(time * 16.0);               // 16rad/s ≒ 2.55Hz
-  const flap = Math.sign(flapBase) * Math.pow(Math.abs(flapBase), 0.85); // エッジ強調
-  const wingAngle = flap * 0.85;                        // 最大 ~0.85rad ≒ 49°
-  const wingScaleX = 1 + Math.abs(flap) * 0.60;         // 横に伸縮（スピード感）
-  const wingJitter = Math.sin(time * 60) * 0.02;        // 微細な震え（高速感）
-
-  // 残像を描く共通の“翼の形”
-  const drawWingShape = () => {
-    ctx.fillStyle = '#220000';
-    ctx.strokeStyle = '#660000';
-    ctx.lineWidth = 2;
-    ctx.beginPath();
-    ctx.moveTo(0, 0);
-    ctx.quadraticCurveTo(18, -12, 34, -2);
-    ctx.quadraticCurveTo(28, 8,  16, 14);
-    ctx.quadraticCurveTo(8,  10, 0,  0);
-    ctx.closePath();
-    ctx.fill();
-    ctx.stroke();
-
-    // 骨ライン
-    ctx.strokeStyle = '#ff0000';
-    ctx.lineWidth = 1;
-    ctx.beginPath();
-    ctx.moveTo(0,0);         ctx.lineTo(14,-8);
-    ctx.moveTo(0,0);         ctx.lineTo(18, 6);
-    ctx.moveTo(10, 2);       ctx.lineTo(26,-2);
-    ctx.stroke();
-  };
-
-  // 翼を描く（side: -1 左 / +1 右）
-  const drawWing = (originX, originY, side) => {
-    // 残像3枚 → 奥から手前へ
-    for (let i = 3; i >= 1; i--) {
-      const trailScale = wingScaleX * (1 - i * 0.10);
-      const trailAngle = wingAngle * (1 - i * 0.18) + wingJitter * i;
-      ctx.save();
-      ctx.globalAlpha = 0.12 * i;           // 残像の濃さ
-      ctx.translate(originX, originY);
-      ctx.scale(side * trailScale, 1);
-      ctx.rotate(side * (Math.PI/8 + trailAngle));
-      drawWingShape();
-      ctx.restore();
-    }
-    // メイン翼（最も濃い）
-    ctx.save();
-    ctx.globalAlpha = 1;
-    ctx.translate(originX, originY);
-    ctx.scale(side * wingScaleX, 1);
-    ctx.rotate(side * (Math.PI/8 + wingAngle));
-    drawWingShape();
-    ctx.restore();
-  };
-
-  // 左右の翼
-  drawWing(p.x + 10, p.y + 16, -1);
-  drawWing(p.x + 40, p.y + 16, +1);
-
-  // ── 本体 ──
-  ctx.fillStyle = '#2d1f0f';
-  ctx.beginPath();
-  ctx.ellipse(p.x + 25, p.y + 20, 20, 15, 0, 0, Math.PI * 2);
+  ctx.fillStyle = 'rgba(255,255,255,0.96)';
+  rr(left, top, cardW, cardH, radius);
   ctx.fill();
-  ctx.fillStyle = '#1a1008';
-  ctx.beginPath();
-  ctx.ellipse(p.x + 25, p.y + 8, 12, 10, 0, 0, Math.PI * 2);
-  ctx.fill();
-
-  // ── 目：ぐるぐる回転（前回仕様） ──
-  const Lx = p.x + 18, Ly = p.y + 6;
-  const Rx = p.x + 32, Ry = p.y + 6;
-  const eyeR = 8, irisR = 7, pupilR = 3.2;
-  const spinL = time * 5.0;
-  const spinR = time * 5.0 + 0.6;
-  const blink = 0.88 + 0.12 * Math.abs(Math.sin(time * 1.2));
-
-  ctx.fillStyle = '#ffffff';
-  ctx.beginPath(); ctx.ellipse(Lx, Ly, eyeR, eyeR*blink, 0, 0, Math.PI*2); ctx.fill();
-  ctx.beginPath(); ctx.ellipse(Rx, Ry, eyeR, eyeR*blink, 0, 0, Math.PI*2); ctx.fill();
-
-  const drawRotIris = (cx, cy, spin) => {
-    ctx.fillStyle = '#ff1a1a';
-    ctx.beginPath();
-    ctx.ellipse(cx, cy, irisR, irisR*blink, 0, 0, Math.PI*2);
-    ctx.fill();
-
-    ctx.save();
-    ctx.translate(cx, cy);
-    ctx.rotate(spin);
-    ctx.globalAlpha = 0.75;
-    ctx.fillStyle = '#ff8080';
-    for (let k = 0; k < 3; k++) {
-      ctx.rotate((Math.PI*2)/3);
-      ctx.beginPath();
-      ctx.ellipse(irisR*0.35, 0, irisR*0.45, irisR*0.18*blink, 0, 0, Math.PI*2);
-      ctx.fill();
-    }
-    ctx.restore();
-
-    const orbit = 2.8;
-    const px = cx + Math.cos(spin) * orbit;
-    const py = cy + Math.sin(spin) * orbit * blink;
-    ctx.fillStyle = '#111';
-    ctx.beginPath();
-    ctx.ellipse(px, py, pupilR, pupilR*blink, 0, 0, Math.PI*2);
-    ctx.fill();
-    ctx.fillStyle = '#fff';
-    ctx.beginPath();
-    ctx.arc(px - 1.0, py - 1.2, 1.2, 0, Math.PI*2);
-    ctx.fill();
-  };
-  drawRotIris(Lx, Ly, spinL);
-  drawRotIris(Rx, Ry, spinR);
-
-  // ── 触角：ウネウネ（前回仕様） ──
-  const drawWigglyAntenna = (bx, by, dir, len=28, seg=6, amp=5, phase=0) => {
-    const pts = [];
-    for (let i = 0; i <= seg; i++) {
-      const u = i / seg;
-      const x = bx + dir * (u * len);
-      const y = by - u * (len * 0.6) + Math.sin((u*6 + time*2) + phase) * amp * (1 - u*0.2);
-      pts.push({x, y});
-    }
-    ctx.strokeStyle = '#000';
-    ctx.lineWidth = 3;
-    ctx.lineCap = 'round';
-    ctx.beginPath();
-    ctx.moveTo(pts[0].x, pts[0].y);
-    for (let i = 1; i < pts.length; i++) {
-      const p0 = pts[i-1], p1 = pts[i];
-      const cx = (p0.x + p1.x) / 2;
-      const cy = (p0.y + p1.y) / 2;
-      ctx.quadraticCurveTo(p0.x, p0.y, cx, cy);
-    }
-    ctx.stroke();
-
-    const tip = pts[pts.length-1];
-    const tipJitter = Math.sin(time*8 + phase) * 1.3;
-    ctx.fillStyle = '#ff0000';
-    ctx.beginPath();
-    ctx.arc(tip.x + tipJitter, tip.y + tipJitter, 2.4, 0, Math.PI*2);
-    ctx.fill();
-  };
-  drawWigglyAntenna(p.x + 18, p.y + 4, -1, 30, 7, 5.5, 0.0);
-  drawWigglyAntenna(p.x + 32, p.y + 4, +1, 30, 7, 5.5, 1.1);
-
-  // 背中の縞
-  ctx.fillStyle = '#3d2f1f';
-  for (let i = 0; i < 3; i++) ctx.fillRect(p.x + 10, p.y + 18 + i*4, 30, 2);
-
-  // 足（簡易）
-  const legT = Math.sin(time * 3.2) * 1.2;
-  ctx.strokeStyle = '#1a1008';
-  ctx.lineWidth = 2;
-  ctx.beginPath();
-  // 左3本
-  ctx.moveTo(p.x + 10, p.y + 15); ctx.lineTo(p.x + 5 + legT, p.y + 25);
-  ctx.moveTo(p.x + 12, p.y + 20); ctx.lineTo(p.x + 7 - legT, p.y + 30);
-  ctx.moveTo(p.x + 14, p.y + 25); ctx.lineTo(p.x + 9 + legT, p.y + 35);
-  // 右3本
-  ctx.moveTo(p.x + 40, p.y + 15); ctx.lineTo(p.x + 45 - legT, p.y + 25);
-  ctx.moveTo(p.x + 38, p.y + 20); ctx.lineTo(p.x + 43 + legT, p.y + 30);
-  ctx.moveTo(p.x + 36, p.y + 25); ctx.lineTo(p.x + 41 - legT, p.y + 35);
+  ctx.lineWidth = 1;
+  ctx.strokeStyle = 'rgba(0,0,0,0.08)';
+  rr(left, top, cardW, cardH, radius);
   ctx.stroke();
 
+  // 文字（中央太字＋薄い縁取りで視認性UP）
+  ctx.textAlign = 'center';
+  ctx.fillStyle = '#000';
+  ctx.strokeStyle = 'rgba(0,0,0,0.25)';
+  ctx.lineWidth = 2;
+
+  // 単語
+  ctx.font = 'bold 15px Arial';
+  ctx.strokeText(vocab.word, centerX, top + 24);
+  ctx.fillText  (vocab.word, centerX, top + 24);
+
+  // 選択肢
+  ctx.font = 'bold 12px Arial';
+  for (let i = 0; i < 4; i++) {
+    const text = `${i + 1}. ${vocab.options[i]}`;
+    const display = text.length > 16 ? text.slice(0, 16) + '…' : text;
+    const y = top + 46 + i * 14;
+    ctx.strokeText(display, centerX, y);
+    ctx.fillText  (display, centerX, y);
+  }
   ctx.restore();
 }
 
 
+
+    // ボス
+    class Boss {
+        constructor() {
+            this.width  = 120;         // 主役より大きい
+            this.height = 100;
+            this.x = canvas.width / 2 - this.width / 2;
+            this.y = 80;
+            this.speed = 5;            // 俊敏
+            this.life = 10;            // ライフ10
+            this.lastMoveChange = 0;
+            this.moveTarget = { x: this.x, y: this.y };
+            this.lastBeamTime = 0;
+            this.beamInterval = 1000 / 5; // 1秒に5発
+            this.phase = Math.random() * Math.PI * 2;
+            this.vocab = hardVocabularyData[bossVocabIndex % hardVocabularyData.length];
+            bossVocabIndex++;
+        }
+
+        pickNewTarget() {
+            const padX = 40, padY = 60;
+            const w = canvas.width, h = canvas.height;
+            // 画面上側60%で素早くランダム移動
+            this.moveTarget.x = Math.random() * (w - this.width  - padX*2) + padX;
+            this.moveTarget.y = Math.random() * (h * 0.6 - this.height - padY*2) + padY;
+        }
+
+        update(now) {
+            if (now - this.lastMoveChange > 600) {
+            this.lastMoveChange = now;
+            this.pickNewTarget();
+            }
+            const dx = this.moveTarget.x - this.x;
+            const dy = this.moveTarget.y - this.y;
+            const d  = Math.hypot(dx, dy) || 1;
+            const vx = (dx / d) * this.speed;
+            const vy = (dy / d) * this.speed;
+            this.x += vx * (1 + Math.sin(now * 0.01 + this.phase) * 0.2);
+            this.y += vy * (1 + Math.cos(now * 0.012 + this.phase) * 0.2);
+
+            // 画面内クランプ
+            this.x = Math.max(10, Math.min(this.x, canvas.width - this.width - 10));
+            this.y = Math.max(10, Math.min(this.y, canvas.height * 0.75 - this.height));
+
+            // ビーム連射
+            if (now - this.lastBeamTime > this.beamInterval) {
+            this.lastBeamTime = now;
+            this.fireBeam();
+            }
+        }
+
+        fireBeam() {
+            const cx = this.x + this.width/2;
+            const cy = this.y + this.height/2;
+            const px = gameState.player.x + gameState.player.width/2;
+            const py = gameState.player.y + gameState.player.height/2;
+            let dx = px - cx, dy = py - cy;
+            const d = Math.hypot(dx, dy) || 1;
+            dx /= d; dy /= d;
+
+            // 少し拡散させて撒き散らす
+            const spread = (Math.random() - 0.5) * 0.25;
+            const angle  = Math.atan2(dy, dx) + spread;
+            const speed  = 14; // 超高速
+
+            gameState.bossBeams.push({
+            x: cx, y: cy,
+            vx: Math.cos(angle) * speed,
+            vy: Math.sin(angle) * speed,
+            r: 8
+            });
+        }
+
+        nextWord() {
+            this.vocab = hardVocabularyData[bossVocabIndex % hardVocabularyData.length];
+            bossVocabIndex++;
+        }
+
+        draw() {
+            const cx = this.x + this.width/2, cy = this.y + this.height/2;
+
+            // 本体（黒→赤グラデ）
+            const g = ctx.createRadialGradient(cx-10, cy-15, 10, cx, cy, this.width);
+            g.addColorStop(0, '#330000');
+            g.addColorStop(0.5, '#550000');
+            g.addColorStop(1, '#000000');
+            ctx.fillStyle = g;
+            ctx.beginPath();
+            ctx.ellipse(cx, cy, this.width/2, this.height/2, 0, 0, Math.PI*2);
+            ctx.fill();
+
+            // 赤い回転アイ
+            const t = performance.now() * 0.005;
+            ctx.save();
+            ctx.translate(cx, cy - 10);
+            ctx.rotate(t);
+            ctx.fillStyle = '#ff2222';
+            ctx.beginPath(); ctx.ellipse(0, 0, 18, 12, 0, 0, Math.PI*2); ctx.fill();
+            ctx.fillStyle = '#770000';
+            ctx.beginPath(); ctx.arc( 6, 0, 5, 0, Math.PI*2); ctx.fill();
+            ctx.beginPath(); ctx.arc(-6, 0, 5, 0, Math.PI*2); ctx.fill();
+            ctx.restore();
+
+            // ツメ装飾
+            ctx.strokeStyle = '#440000'; ctx.lineWidth = 3;
+            for (let i = 0; i < 6; i++) {
+            const a = (i/6)*Math.PI*2 + t*0.4;
+            const ex = cx + Math.cos(a) * (this.width * 0.5);
+            const ey = cy + Math.sin(a) * (this.height * 0.45);
+            ctx.beginPath(); ctx.moveTo(ex, ey); ctx.lineTo(ex + Math.cos(a)*15, ey + Math.sin(a)*15); ctx.stroke();
+            }
+
+            // 単語カード（ボス用は少し大きめ）
+            drawWordCard(this.vocab, cx, this.y - 20, 160, 110);
+        }
+        }
+
+
         
-        // 敵ビーム更新・描画
-      // 敵ビーム更新・描画（高速＆丸いレーザー）
+    // メッセージクラス
+    class FloatingMessage {
+        constructor(x, y, text, color) {
+            this.x = x;
+            this.y = y;
+            this.text = text;
+            this.color = color;
+            this.life = 30; // 0.5秒 (60fps基準で30フレーム)
+            this.maxLife = 30;
+            this.startY = y;
+        }
+        
+        update() {
+            this.life--;
+            // メッセージが上に浮上
+            this.y = this.startY - (this.maxLife - this.life) * 2;
+            return this.life > 0;
+        }
+        
+        draw() {
+            const alpha = this.life / this.maxLife;
+            ctx.save();
+            ctx.globalAlpha = alpha;
+            ctx.font = 'bold 20px Arial';
+            ctx.fillStyle = this.color;
+            ctx.textAlign = 'center';
+            ctx.strokeStyle = '#000000';
+            ctx.lineWidth = 2;
+            
+            // 文字の縁取り
+            ctx.strokeText(this.text, this.x, this.y);
+            // 文字本体
+            ctx.fillText(this.text, this.x, this.y);
+            
+            ctx.restore();
+        }
+    }
+    class Explosion {
+        constructor(x, y) {
+            this.x = x;
+            this.y = y;
+            this.radius = 10;
+            this.maxRadius = 40;
+            this.life = 30;
+            this.maxLife = 30;
+        }
+        
+        update() {
+            this.life--;
+            this.radius = (this.maxRadius * (this.maxLife - this.life)) / this.maxLife;
+            return this.life > 0;
+        }
+        
+        draw() {
+            const alpha = this.life / this.maxLife;
+            ctx.save();
+            ctx.globalAlpha = alpha;
+            
+            // 外側の爆発
+            ctx.fillStyle = '#ff6600';
+            ctx.beginPath();
+            ctx.arc(this.x, this.y, this.radius, 0, Math.PI * 2);
+            ctx.fill();
+            
+            // 内側の爆発
+            ctx.fillStyle = '#ffff00';
+            ctx.beginPath();
+            ctx.arc(this.x, this.y, this.radius * 0.6, 0, Math.PI * 2);
+            ctx.fill();
+            
+            // 中心の爆発
+            ctx.fillStyle = '#ffffff';
+            ctx.beginPath();
+            ctx.arc(this.x, this.y, this.radius * 0.3, 0, Math.PI * 2);
+            ctx.fill();
+            
+            ctx.restore();
+        }
+    }
+    // === 番号別カラー＆数字入りミサイル ===
+    class Missile {
+    constructor(x, y, number) {
+        this.x = x;
+        this.y = y;
+        this.width = 22;   // 少し大きくして数字を見やすく
+        this.height = 34;
+        this.speed = 9;
+        this.number = number;
+
+        // 番号→色パレット
+        const palette = {
+        1: { base: '#e53935', light: '#ff7673', dark: '#b71c1c' }, // 赤
+        2: { base: '#29b6f6', light: '#7fd3ff', dark: '#0288d1' }, // 水色
+        3: { base: '#ffa726', light: '#ffcc80', dark: '#ef6c00' }, // オレンジ
+        4: { base: '#26c684', light: '#7be0b3', dark: '#1b9e68' }, // 緑
+        default: { base: '#9e9e9e', light: '#cfcfcf', dark: '#616161' }
+        };
+        this.colors = palette[number] || palette.default;
+    }
+
+    update() {
+        this.y -= this.speed;
+        return this.y > -60;
+    }
+
+    draw() {
+        const c = this.colors;
+        const { x, y, width: w, height: h } = this;
+
+        // ボディのグラデ
+        const g = ctx.createLinearGradient(x, y, x, y + h);
+        g.addColorStop(0, c.light);
+        g.addColorStop(0.5, c.base);
+        g.addColorStop(1, c.dark);
+
+        ctx.save();
+
+        // 角丸ボディ
+        ctx.fillStyle = g;
+        ctx.strokeStyle = '#111';
+        ctx.lineWidth = 1.2;
+        const r = 5;
+        ctx.beginPath();
+        ctx.moveTo(x + r, y);
+        ctx.lineTo(x + w - r, y);
+        ctx.quadraticCurveTo(x + w, y, x + w, y + r);
+        ctx.lineTo(x + w, y + h - r);
+        ctx.quadraticCurveTo(x + w, y + h, x + w - r, y + h);
+        ctx.lineTo(x + r, y + h);
+        ctx.quadraticCurveTo(x, y + h, x, y + h - r);
+        ctx.lineTo(x, y + r);
+        ctx.quadraticCurveTo(x, y, x + r, y);
+        ctx.closePath();
+        ctx.fill();
+        ctx.stroke();
+
+        // ノーズ（先端）
+        ctx.beginPath();
+        ctx.moveTo(x + w / 2, y - 10);
+        ctx.lineTo(x + w, y + 4);
+        ctx.lineTo(x, y + 4);
+        ctx.closePath();
+        ctx.fillStyle = c.base;
+        ctx.fill();
+        ctx.stroke();
+
+        // フィン（左右）
+        ctx.fillStyle = c.dark;
+        ctx.beginPath(); // 左
+        ctx.moveTo(x, y + h * 0.55);
+        ctx.lineTo(x - 10, y + h * 0.75);
+        ctx.lineTo(x, y + h * 0.8);
+        ctx.closePath();
+        ctx.fill();
+
+        ctx.beginPath(); // 右
+        ctx.moveTo(x + w, y + h * 0.55);
+        ctx.lineTo(x + w + 10, y + h * 0.75);
+        ctx.lineTo(x + w, y + h * 0.8);
+        ctx.closePath();
+        ctx.fill();
+
+        // 中央の番号（アウトライン付きで視認性UP）
+        ctx.font = 'bold 18px Arial';
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.lineWidth = 3;
+        ctx.strokeStyle = 'rgba(0,0,0,0.5)';
+        ctx.strokeText(String(this.number), x + w / 2, y + h / 2);
+        ctx.fillStyle = '#ffffff';
+        ctx.fillText(String(this.number), x + w / 2, y + h / 2);
+
+        // 後部の噴射炎（ちょい演出）
+        const flameH = 10 + Math.random() * 6;
+        const flameW = 8;
+        ctx.beginPath();
+        ctx.moveTo(x + w / 2, y + h + flameH);
+        ctx.lineTo(x + w / 2 - flameW / 2, y + h);
+        ctx.lineTo(x + w / 2 + flameW / 2, y + h);
+        ctx.closePath();
+        const fg = ctx.createLinearGradient(x, y + h, x, y + h + flameH);
+        fg.addColorStop(0, 'rgba(255,255,255,0.95)');
+        fg.addColorStop(1, 'rgba(255,180,0,0.85)');
+        ctx.fillStyle = fg;
+        ctx.fill();
+
+        ctx.restore();
+    }
+    }
+
+        
+    // プレイヤー描画
+    // ===== 主役キャラ：赤目ぐるぐる＋触角ウネウネ版 =====
+    // ===== 主役キャラ：羽ばたき激化（残像つき）版 =====
+    function drawPlayer() {
+    const p = gameState.player;
+    const t = gameState.animationTime;
+    const time = t * (1/60);
+
+    ctx.save();
+
+    // ── 羽ばたきパラメータ（激しめ） ──
+    // 周波数を上げ、角度・スケールの振れ幅も増やす
+    const flapBase = Math.sin(time * 16.0);               // 16rad/s ≒ 2.55Hz
+    const flap = Math.sign(flapBase) * Math.pow(Math.abs(flapBase), 0.85); // エッジ強調
+    const wingAngle = flap * 0.85;                        // 最大 ~0.85rad ≒ 49°
+    const wingScaleX = 1 + Math.abs(flap) * 0.60;         // 横に伸縮（スピード感）
+    const wingJitter = Math.sin(time * 60) * 0.02;        // 微細な震え（高速感）
+
+    // 残像を描く共通の“翼の形”
+    const drawWingShape = () => {
+        ctx.fillStyle = '#220000';
+        ctx.strokeStyle = '#660000';
+        ctx.lineWidth = 2;
+        ctx.beginPath();
+        ctx.moveTo(0, 0);
+        ctx.quadraticCurveTo(18, -12, 34, -2);
+        ctx.quadraticCurveTo(28, 8,  16, 14);
+        ctx.quadraticCurveTo(8,  10, 0,  0);
+        ctx.closePath();
+        ctx.fill();
+        ctx.stroke();
+
+        // 骨ライン
+        ctx.strokeStyle = '#ff0000';
+        ctx.lineWidth = 1;
+        ctx.beginPath();
+        ctx.moveTo(0,0);         ctx.lineTo(14,-8);
+        ctx.moveTo(0,0);         ctx.lineTo(18, 6);
+        ctx.moveTo(10, 2);       ctx.lineTo(26,-2);
+        ctx.stroke();
+    };
+
+    // 翼を描く（side: -1 左 / +1 右）
+    const drawWing = (originX, originY, side) => {
+        // 残像3枚 → 奥から手前へ
+        for (let i = 3; i >= 1; i--) {
+        const trailScale = wingScaleX * (1 - i * 0.10);
+        const trailAngle = wingAngle * (1 - i * 0.18) + wingJitter * i;
+        ctx.save();
+        ctx.globalAlpha = 0.12 * i;           // 残像の濃さ
+        ctx.translate(originX, originY);
+        ctx.scale(side * trailScale, 1);
+        ctx.rotate(side * (Math.PI/8 + trailAngle));
+        drawWingShape();
+        ctx.restore();
+        }
+        // メイン翼（最も濃い）
+        ctx.save();
+        ctx.globalAlpha = 1;
+        ctx.translate(originX, originY);
+        ctx.scale(side * wingScaleX, 1);
+        ctx.rotate(side * (Math.PI/8 + wingAngle));
+        drawWingShape();
+        ctx.restore();
+    };
+
+    // 左右の翼
+    drawWing(p.x + 10, p.y + 16, -1);
+    drawWing(p.x + 40, p.y + 16, +1);
+
+    // ── 本体 ──
+    ctx.fillStyle = '#2d1f0f';
+    ctx.beginPath();
+    ctx.ellipse(p.x + 25, p.y + 20, 20, 15, 0, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.fillStyle = '#1a1008';
+    ctx.beginPath();
+    ctx.ellipse(p.x + 25, p.y + 8, 12, 10, 0, 0, Math.PI * 2);
+    ctx.fill();
+
+    // ── 目：ぐるぐる回転（前回仕様） ──
+    const Lx = p.x + 18, Ly = p.y + 6;
+    const Rx = p.x + 32, Ry = p.y + 6;
+    const eyeR = 8, irisR = 7, pupilR = 3.2;
+    const spinL = time * 5.0;
+    const spinR = time * 5.0 + 0.6;
+    const blink = 0.88 + 0.12 * Math.abs(Math.sin(time * 1.2));
+
+    ctx.fillStyle = '#ffffff';
+    ctx.beginPath(); ctx.ellipse(Lx, Ly, eyeR, eyeR*blink, 0, 0, Math.PI*2); ctx.fill();
+    ctx.beginPath(); ctx.ellipse(Rx, Ry, eyeR, eyeR*blink, 0, 0, Math.PI*2); ctx.fill();
+
+    const drawRotIris = (cx, cy, spin) => {
+        ctx.fillStyle = '#ff1a1a';
+        ctx.beginPath();
+        ctx.ellipse(cx, cy, irisR, irisR*blink, 0, 0, Math.PI*2);
+        ctx.fill();
+
+        ctx.save();
+        ctx.translate(cx, cy);
+        ctx.rotate(spin);
+        ctx.globalAlpha = 0.75;
+        ctx.fillStyle = '#ff8080';
+        for (let k = 0; k < 3; k++) {
+        ctx.rotate((Math.PI*2)/3);
+        ctx.beginPath();
+        ctx.ellipse(irisR*0.35, 0, irisR*0.45, irisR*0.18*blink, 0, 0, Math.PI*2);
+        ctx.fill();
+        }
+        ctx.restore();
+
+        const orbit = 2.8;
+        const px = cx + Math.cos(spin) * orbit;
+        const py = cy + Math.sin(spin) * orbit * blink;
+        ctx.fillStyle = '#111';
+        ctx.beginPath();
+        ctx.ellipse(px, py, pupilR, pupilR*blink, 0, 0, Math.PI*2);
+        ctx.fill();
+        ctx.fillStyle = '#fff';
+        ctx.beginPath();
+        ctx.arc(px - 1.0, py - 1.2, 1.2, 0, Math.PI*2);
+        ctx.fill();
+    };
+    drawRotIris(Lx, Ly, spinL);
+    drawRotIris(Rx, Ry, spinR);
+
+    // ── 触角：ウネウネ（前回仕様） ──
+    const drawWigglyAntenna = (bx, by, dir, len=28, seg=6, amp=5, phase=0) => {
+        const pts = [];
+        for (let i = 0; i <= seg; i++) {
+        const u = i / seg;
+        const x = bx + dir * (u * len);
+        const y = by - u * (len * 0.6) + Math.sin((u*6 + time*2) + phase) * amp * (1 - u*0.2);
+        pts.push({x, y});
+        }
+        ctx.strokeStyle = '#000';
+        ctx.lineWidth = 3;
+        ctx.lineCap = 'round';
+        ctx.beginPath();
+        ctx.moveTo(pts[0].x, pts[0].y);
+        for (let i = 1; i < pts.length; i++) {
+        const p0 = pts[i-1], p1 = pts[i];
+        const cx = (p0.x + p1.x) / 2;
+        const cy = (p0.y + p1.y) / 2;
+        ctx.quadraticCurveTo(p0.x, p0.y, cx, cy);
+        }
+        ctx.stroke();
+
+        const tip = pts[pts.length-1];
+        const tipJitter = Math.sin(time*8 + phase) * 1.3;
+        ctx.fillStyle = '#ff0000';
+        ctx.beginPath();
+        ctx.arc(tip.x + tipJitter, tip.y + tipJitter, 2.4, 0, Math.PI*2);
+        ctx.fill();
+    };
+    drawWigglyAntenna(p.x + 18, p.y + 4, -1, 30, 7, 5.5, 0.0);
+    drawWigglyAntenna(p.x + 32, p.y + 4, +1, 30, 7, 5.5, 1.1);
+
+    // 背中の縞
+    ctx.fillStyle = '#3d2f1f';
+    for (let i = 0; i < 3; i++) ctx.fillRect(p.x + 10, p.y + 18 + i*4, 30, 2);
+
+    // 足（簡易）
+    const legT = Math.sin(time * 3.2) * 1.2;
+    ctx.strokeStyle = '#1a1008';
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    // 左3本
+    ctx.moveTo(p.x + 10, p.y + 15); ctx.lineTo(p.x + 5 + legT, p.y + 25);
+    ctx.moveTo(p.x + 12, p.y + 20); ctx.lineTo(p.x + 7 - legT, p.y + 30);
+    ctx.moveTo(p.x + 14, p.y + 25); ctx.lineTo(p.x + 9 + legT, p.y + 35);
+    // 右3本
+    ctx.moveTo(p.x + 40, p.y + 15); ctx.lineTo(p.x + 45 - legT, p.y + 25);
+    ctx.moveTo(p.x + 38, p.y + 20); ctx.lineTo(p.x + 43 + legT, p.y + 30);
+    ctx.moveTo(p.x + 36, p.y + 25); ctx.lineTo(p.x + 41 - legT, p.y + 35);
+    ctx.stroke();
+
+    ctx.restore();
+    }
+
+    function spawnBossIfReady() {
+    if (!gameState.boss && gameState.score >= 100) {
+        gameState.boss = new Boss();
+    }
+    }
+
+        
+// 敵ビーム更新・描画
+// 敵ビーム更新・描画（高速＆丸いレーザー）
 function updateEnemyBeams() {
   // まず移動＆当たり判定＆生存フィルタ
   gameState.enemyBeams = gameState.enemyBeams.filter(beam => {
@@ -969,309 +1162,393 @@ function updateEnemyBeams() {
   });
 }
 
-        
-        // 衝突判定
-        function checkCollisions() {
-            try {
-                if (!gameState.missiles || !gameState.enemies) return;
-                
-                for (let mIndex = gameState.missiles.length - 1; mIndex >= 0; mIndex--) {
-                    const missile = gameState.missiles[mIndex];
-                    if (!missile) continue;
-                    
-                    for (let eIndex = gameState.enemies.length - 1; eIndex >= 0; eIndex--) {
-                        const enemy = gameState.enemies[eIndex];
-                        if (!enemy) continue;
-                        
-                        if (missile.x < enemy.x + enemy.width &&
-                            missile.x + missile.width > enemy.x &&
-                            missile.y < enemy.y + enemy.height &&
-                            missile.y + missile.height > enemy.y) {
-                            
-                            // 敵に爆発エフェクト
-                            gameState.explosions.push(new Explosion(
-                                enemy.x + enemy.width / 2,
-                                enemy.y + enemy.height / 2
-                            ));
-                            
-                            // 正解チェック
-                            if (missile.number === enemy.vocab.correct) {
-                                gameState.score += 100;
-                                // "OK"メッセージを表示（赤字）
-                                gameState.messages.push(new FloatingMessage(
-                                    enemy.x + enemy.width / 2,
-                                    enemy.y - 10,
-                                    "OK",
-                                    "#ff0000"
-                                ));
-                            } else {
-                                gameState.life--;
-                                // "MISS"メッセージを表示（青字）
-                                gameState.messages.push(new FloatingMessage(
-                                    enemy.x + enemy.width / 2,
-                                    enemy.y - 10,
-                                    "MISS",
-                                    "#0000ff"
-                                ));
-                            }
-                            
-                            gameState.missiles.splice(mIndex, 1);
-                            gameState.enemies.splice(eIndex, 1);
-                            updateUI();
-                            break;
-                        }
-                    }
-                }
-            } catch (error) {
-                console.error('衝突判定エラー:', error.message);
-            }
-        }
-        
-        // プレイヤーと敵の衝突判定
-        function checkPlayerEnemyCollisions() {
-            try {
-                if (!gameState.enemies || !gameState.player) return;
-                
-                for (let eIndex = gameState.enemies.length - 1; eIndex >= 0; eIndex--) {
-                    const enemy = gameState.enemies[eIndex];
-                    if (!enemy) continue;
-                    
-                    if (gameState.player.x < enemy.x + enemy.width &&
-                        gameState.player.x + gameState.player.width > enemy.x &&
-                        gameState.player.y < enemy.y + enemy.height &&
-                        gameState.player.y + gameState.player.height > enemy.y) {
-                        
-                        // プレイヤーの前方（上側）に爆発エフェクト
-                        gameState.explosions.push(new Explosion(
-                            gameState.player.x + gameState.player.width / 2,
-                            gameState.player.y - 20  // プレイヤーの上20ピクセル前方
-                        ));
-                        
-                        // 敵にも爆発エフェクト
-                        gameState.explosions.push(new Explosion(
-                            enemy.x + enemy.width / 2,
-                            enemy.y + enemy.height / 2
-                        ));
-                        
-                        // 敵を消滅させる
-                        gameState.enemies.splice(eIndex, 1);
-                        
-                        // プレイヤーのライフを1減らす
-                        gameState.life--;
-                        updateUI();
-                        
-                        // 1回の衝突のみ処理
-                        break;
-                    }
-                }
-            } catch (error) {
-                console.error('プレイヤー衝突判定エラー:', error.message);
-            }
-        }
-        
-        // プレイヤー更新（なめらかな移動）
-        function updatePlayer() {
-            const moveSpeed = 6;
-            if (gameState.keys['ArrowLeft'] && gameState.player.x > 0) {
-                gameState.player.x -= moveSpeed;
-            }
-            if (gameState.keys['ArrowRight'] && gameState.player.x < canvas.width - gameState.player.width) {
-                gameState.player.x += moveSpeed;
-            }
-            if (gameState.keys['ArrowUp'] && gameState.player.y > 0) {
-                gameState.player.y -= moveSpeed;
-            }
-            if (gameState.keys['ArrowDown'] && gameState.player.y < canvas.height - gameState.player.height - 100) {
-                gameState.player.y += moveSpeed;
-            }
-        }
-        function updateUI() {
-            document.getElementById('lifeCount').textContent = gameState.life;
-            document.getElementById('scoreCount').textContent = gameState.score;
-        }
-        
-        // 敵生成
-        function spawnEnemy() {
-            try {
-                // 敵の生成頻度を少し下げて重なりを防ぐ
-                if (Math.random() < 0.015 && gameState.enemies.length < 4) {
-                    const newEnemy = new Enemy();
-                    gameState.enemies.push(newEnemy);
-                }
-            } catch (error) {
-                console.error('敵生成エラー:', error.message);
-            }
-        }
-        
-                // ゲームループ
-        function gameLoop() {
-            try {
-                if (!gameState.gameRunning) return;
-                
-                // アニメーション時間を更新
-                gameState.animationTime++;
-                
-                // ライフチェック
-                if (gameState.life <= 0) {
-                    gameOver();
-                    return;
-                }
-                
-                // 画面クリア
-                ctx.clearRect(0, 0, canvas.width, canvas.height);
-                
-                // 星空背景（固定）
-                drawStars();
-                
-                // 敵生成
-                spawnEnemy();
-                
-                // 敵更新・描画
-                gameState.enemies = gameState.enemies.filter(enemy => {
-                    if (enemy && typeof enemy.draw === 'function' && typeof enemy.update === 'function') {
-                        enemy.draw();
-                        return enemy.update();
-                    }
-                    return false;
-                });
-                
-                // ミサイル更新・描画
-                gameState.missiles = gameState.missiles.filter(missile => {
-                    if (missile && typeof missile.draw === 'function' && typeof missile.update === 'function') {
-                        missile.draw();
-                        return missile.update();
-                    }
-                    return false;
-                });
-                
-                // 敵ビーム更新
-                updateEnemyBeams();
-                
-                // 衝突判定
-                checkCollisions();
-                
-                // プレイヤーと敵の衝突判定
-                checkPlayerEnemyCollisions();
-                
-                // 爆発更新・描画
-                gameState.explosions = gameState.explosions.filter(explosion => {
-                    if (explosion && typeof explosion.draw === 'function' && typeof explosion.update === 'function') {
-                        explosion.draw();
-                        return explosion.update();
-                    }
-                    return false;
-                });
-                
-                // メッセージ更新・描画
-                gameState.messages = gameState.messages.filter(message => {
-                    if (message && typeof message.draw === 'function' && typeof message.update === 'function') {
-                        message.draw();
-                        return message.update();
-                    }
-                    return false;
-                });
-                
-                // プレイヤー更新
-                updatePlayer();
-                
-                // プレイヤー描画
-                drawPlayer();
-                
-                requestAnimationFrame(gameLoop);
-            } catch (error) {
-                console.error('ゲームループエラー詳細:', error.message);
-                console.error('スタックトレース:', error.stack);
-                console.error('gameState:', gameState);
-                gameState.gameRunning = false;
-            }
-        }
-        
-        // ゲームオーバー
-        function gameOver() {
-            gameState.gameRunning = false;
-            document.getElementById('finalScore').textContent = gameState.score;
-            document.getElementById('gameOver').style.display = 'block';
-        }
-        
-        // ゲーム再開
-        function restartGame() {
-            gameState = {
-                life: 3,
-                score: 0,
-                gameRunning: true,
-                enemies: [],
-                missiles: [],
-                enemyBeams: [],
-                explosions: [],
-                messages: [],
-                stars: [],
-                animationTime: 0,
-                player: {
-                    x: canvas.width / 2 - 25,
-                    y: canvas.height - 120,
-                    width: 50,
-                    height: 40
-                },
-                keys: {}
-            };
-            currentVocabIndex = 0;
-            initStars();
-            document.getElementById('gameOver').style.display = 'none';
+    function updateBossBeams() {
+        const p = gameState.player;
+        gameState.bossBeams = gameState.bossBeams.filter(b => {
+            b.x += b.vx; b.y += b.vy;
+
+            // 円（ビーム）と矩形（プレイヤー）の簡易当たり
+            const nearestX = Math.max(p.x, Math.min(b.x, p.x + p.width));
+            const nearestY = Math.max(p.y, Math.min(b.y, p.y + p.height));
+            const dist = Math.hypot(b.x - nearestX, b.y - nearestY);
+
+            if (dist <= b.r) {
+            gameState.explosions.push(new Explosion(p.x + p.width/2, p.y - 20));
+            gameState.life--;
             updateUI();
-            gameLoop();
-        }
-        
-        // キーボード入力
-        document.addEventListener('keydown', (e) => {
-            if (!gameState.gameRunning) return;
-            
-            const key = e.key;
-            gameState.keys[key] = true;
-            
-            if (['1', '2', '3', '4'].includes(key)) {
-                const number = parseInt(key);
-                gameState.missiles.push(new Missile(
-                    gameState.player.x + gameState.player.width / 2 - 10,
-                    gameState.player.y - 30,
-                    number
-                ));
+            return false;
             }
+
+            return b.x > -40 && b.x < canvas.width + 40 && b.y > -40 && b.y < canvas.height + 40;
         });
-        
-        document.addEventListener('keyup', (e) => {
-            gameState.keys[e.key] = false;
+
+        // 描画（赤い発光弾）
+        gameState.bossBeams.forEach(b => {
+            ctx.save();
+            ctx.shadowColor = 'rgba(255,40,40,0.9)';
+            ctx.shadowBlur = 18;
+            const g = ctx.createRadialGradient(b.x, b.y, 0, b.x, b.y, b.r);
+            g.addColorStop(0, '#fff5f5');
+            g.addColorStop(0.6, '#ff5555');
+            g.addColorStop(1, '#aa0000');
+            ctx.fillStyle = g;
+            ctx.beginPath();
+            ctx.arc(b.x, b.y, b.r, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.restore();
         });
+        }
+
+        function drawBossHPBar() {
+        if (!gameState.boss) return;
+        const max = 10;
+        const ratio = Math.max(0, gameState.boss.life) / max;
+        const barW = 200, barH = 12;
+        const x = canvas.width / 2 - barW / 2;
+        const y = 10;
+
+        ctx.fillStyle = 'rgba(0,0,0,0.5)';
+        ctx.fillRect(x - 2, y - 2, barW + 4, barH + 4);
+
+        ctx.fillStyle = '#550000';
+        ctx.fillRect(x, y, barW, barH);
+        ctx.fillStyle = '#ff3333';
+        ctx.fillRect(x, y, barW * ratio, barH);
+
+        ctx.strokeStyle = '#ffffff';
+        ctx.strokeRect(x - 2, y - 2, barW + 4, barH + 4);
+
+        ctx.font = 'bold 12px Arial';
+        ctx.textAlign = 'center';
+        ctx.fillStyle = '#fff';
+        ctx.fillText('BOSS', canvas.width / 2, y + barH + 14);
+        }
+ 
+    // 衝突判定
+    function checkCollisions() {
+    try {
+        if (!gameState.missiles) return;
+
+        for (let m = gameState.missiles.length - 1; m >= 0; m--) {
+        const missile = gameState.missiles[m];
+        if (!missile) continue;
+        let handled = false;
+
+        // 1) 通常敵
+        for (let e = gameState.enemies.length - 1; e >= 0; e--) {
+            const enemy = gameState.enemies[e];
+            if (!enemy) continue;
+
+            if (missile.x < enemy.x + enemy.width &&
+                missile.x + missile.width > enemy.x &&
+                missile.y < enemy.y + enemy.height &&
+                missile.y + missile.height > enemy.y) {
+
+            gameState.explosions.push(new Explosion(enemy.x + enemy.width/2, enemy.y + enemy.height/2));
+
+            if (missile.number === enemy.vocab.correct) {
+                gameState.score += 100;
+                gameState.messages.push(new FloatingMessage(enemy.x + enemy.width/2, enemy.y - 10, "OK", "#ff0000"));
+            } else {
+                gameState.life--;
+                gameState.messages.push(new FloatingMessage(enemy.x + enemy.width/2, enemy.y - 10, "MISS", "#0000ff"));
+            }
+
+            gameState.missiles.splice(m, 1);
+            gameState.enemies.splice(e, 1);
+            updateUI();
+            handled = true;
+            break;
+            }
+        }
+        if (handled) continue;
+
+        // 2) ボス
+        if (gameState.boss) {
+            const b = gameState.boss;
+            if (missile.x < b.x + b.width &&
+                missile.x + missile.width > b.x &&
+                missile.y < b.y + b.height &&
+                missile.y + missile.height > b.y) {
+
+            gameState.explosions.push(new Explosion(missile.x + missile.width/2, missile.y));
+
+            if (missile.number === b.vocab.correct) {
+                b.life--;
+                gameState.score += 200;
+                gameState.messages.push(new FloatingMessage(b.x + b.width/2, b.y - 10, "HIT!", "#ff4444"));
+                b.nextWord();
+
+                if (b.life <= 0) {
+                gameState.messages.push(new FloatingMessage(canvas.width/2, 120, "BOSS DOWN!", "#ffdd00"));
+                gameState.boss = null;
+                gameState.bossBeams.length = 0;
+                }
+            } else {
+                // ミスはプレイヤーにダメージ
+                gameState.life--;
+                gameState.messages.push(new FloatingMessage(b.x + b.width/2, b.y - 10, "MISS", "#00aaff"));
+            }
+
+            gameState.missiles.splice(m, 1);
+            updateUI();
+            continue;
+            }
+        }
+        }
+    } catch (err) {
+        console.error('衝突判定エラー:', err.message);
+    }
+    }
+
         
-        // タッチコントロール
-        document.querySelectorAll('.answer-btn').forEach(btn => {
-            btn.addEventListener('click', (e) => {
-                if (!gameState.gameRunning) return;
-                
-                const number = parseInt(btn.dataset.answer);
-                gameState.missiles.push(new Missile(
-                    gameState.player.x + gameState.player.width / 2 - 10,
-                    gameState.player.y - 30,
-                    number
-                ));
-            });
+    // プレイヤーと敵の衝突判定
+    function checkPlayerEnemyCollisions() {
+        try {
+            if (!gameState.enemies || !gameState.player) return;
             
-            btn.addEventListener('touchstart', (e) => {
-                e.preventDefault();
-                if (!gameState.gameRunning) return;
+            for (let eIndex = gameState.enemies.length - 1; eIndex >= 0; eIndex--) {
+                const enemy = gameState.enemies[eIndex];
+                if (!enemy) continue;
                 
-                const number = parseInt(btn.dataset.answer);
-                gameState.missiles.push(new Missile(
-                    gameState.player.x + gameState.player.width / 2 - 10,
-                    gameState.player.y - 30,
-                    number
-                ));
+                if (gameState.player.x < enemy.x + enemy.width &&
+                    gameState.player.x + gameState.player.width > enemy.x &&
+                    gameState.player.y < enemy.y + enemy.height &&
+                    gameState.player.y + gameState.player.height > enemy.y) {
+                    
+                    // プレイヤーの前方（上側）に爆発エフェクト
+                    gameState.explosions.push(new Explosion(
+                        gameState.player.x + gameState.player.width / 2,
+                        gameState.player.y - 20  // プレイヤーの上20ピクセル前方
+                    ));
+                    
+                    // 敵にも爆発エフェクト
+                    gameState.explosions.push(new Explosion(
+                        enemy.x + enemy.width / 2,
+                        enemy.y + enemy.height / 2
+                    ));
+                    
+                    // 敵を消滅させる
+                    gameState.enemies.splice(eIndex, 1);
+                    
+                    // プレイヤーのライフを1減らす
+                    gameState.life--;
+                    updateUI();
+                    
+                    // 1回の衝突のみ処理
+                    break;
+                }
+            }
+        } catch (error) {
+            console.error('プレイヤー衝突判定エラー:', error.message);
+        }
+    }
+    
+    // プレイヤー更新（なめらかな移動）
+    function updatePlayer() {
+        const moveSpeed = 6;
+        if (gameState.keys['ArrowLeft'] && gameState.player.x > 0) {
+            gameState.player.x -= moveSpeed;
+        }
+        if (gameState.keys['ArrowRight'] && gameState.player.x < canvas.width - gameState.player.width) {
+            gameState.player.x += moveSpeed;
+        }
+        if (gameState.keys['ArrowUp'] && gameState.player.y > 0) {
+            gameState.player.y -= moveSpeed;
+        }
+        if (gameState.keys['ArrowDown'] && gameState.player.y < canvas.height - gameState.player.height - 100) {
+            gameState.player.y += moveSpeed;
+        }
+    }
+    function updateUI() {
+        document.getElementById('lifeCount').textContent = gameState.life;
+        document.getElementById('scoreCount').textContent = gameState.score;
+    }
+    
+    // 敵生成
+    function spawnEnemy() {
+        try {
+            // 敵の生成頻度を少し下げて重なりを防ぐ
+            if (Math.random() < 0.015 && gameState.enemies.length < 4) {
+                const newEnemy = new Enemy();
+                gameState.enemies.push(newEnemy);
+            }
+        } catch (error) {
+            console.error('敵生成エラー:', error.message);
+        }
+    }
+    
+    // ゲームループ
+    function gameLoop() {
+        try {
+            if (!gameState.gameRunning) return;
+
+            gameState.animationTime++;
+
+            if (gameState.life <= 0) { gameOver(); return; }
+
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            drawStars();
+
+            // 通常敵の生成・更新・描画
+            spawnEnemy();
+            gameState.enemies = gameState.enemies.filter(enemy => {
+            if (enemy && enemy.draw && enemy.update) {
+                enemy.draw();
+                return enemy.update();
+            }
+            return false;
             });
-        });
-        
-        // ゲーム開始
+
+            // ★ スコア到達でボス出現
+            spawnBossIfReady();
+
+            // ★ ボス更新・描画
+            if (gameState.boss) {
+            const now = performance.now();
+            gameState.boss.update(now);
+            gameState.boss.draw();
+            }
+
+            // ミサイル更新・描画
+            gameState.missiles = gameState.missiles.filter(missile => {
+            if (missile && missile.draw && missile.update) {
+                missile.draw();
+                return missile.update();
+            }
+            return false;
+            });
+
+            // 通常敵ビーム
+            updateEnemyBeams();
+
+            // ★ ボスのビーム
+            updateBossBeams();
+
+            // 衝突
+            checkCollisions();
+            checkPlayerEnemyCollisions();
+
+            // 爆発
+            gameState.explosions = gameState.explosions.filter(ex => {
+            if (ex && ex.draw && ex.update) { ex.draw(); return ex.update(); }
+            return false;
+            });
+
+            // メッセージ
+            gameState.messages = gameState.messages.filter(msg => {
+            if (msg && msg.draw && msg.update) { msg.draw(); return msg.update(); }
+            return false;
+            });
+
+            // プレイヤー
+            updatePlayer();
+            drawPlayer();
+
+            // ★ ボスHPバー（最後にUIとして）
+            drawBossHPBar();
+
+            requestAnimationFrame(gameLoop);
+        } catch (error) {
+            console.error('ゲームループエラー詳細:', error.message);
+            console.error('スタックトレース:', error.stack);
+            console.error('gameState:', gameState);
+            gameState.gameRunning = false;
+        }
+        }
+
+    
+    // ゲームオーバー
+    function gameOver() {
+        gameState.gameRunning = false;
+        document.getElementById('finalScore').textContent = gameState.score;
+        document.getElementById('gameOver').style.display = 'block';
+    }
+    
+    // ゲーム再開
+    function restartGame() {
+        gameState = {
+            life: 3,
+            score: 0,
+            gameRunning: true,
+            enemies: [],
+            missiles: [],
+            enemyBeams: [],
+            explosions: [],
+            messages: [],
+            stars: [],
+            animationTime: 0,
+            player: {
+            x: canvas.width / 2 - 25,
+            y: canvas.height - 120,
+            width: 50,
+            height: 40
+            },
+            keys: {},
+            // 追加
+            boss: null,
+            bossBeams: []
+        };
+        currentVocabIndex = 0;
+        bossVocabIndex = 0;
         initStars();
+        document.getElementById('gameOver').style.display = 'none';
         updateUI();
         gameLoop();
+        }
+
+    
+    // キーボード入力
+    document.addEventListener('keydown', (e) => {
+        if (!gameState.gameRunning) return;
+        
+        const key = e.key;
+        gameState.keys[key] = true;
+        
+        if (['1', '2', '3', '4'].includes(key)) {
+            const number = parseInt(key);
+            gameState.missiles.push(new Missile(
+                gameState.player.x + gameState.player.width / 2 - 10,
+                gameState.player.y - 30,
+                number
+            ));
+        }
+    });
+    
+    document.addEventListener('keyup', (e) => {
+        gameState.keys[e.key] = false;
+    });
+    
+    // タッチコントロール
+    document.querySelectorAll('.answer-btn').forEach(btn => {
+        btn.addEventListener('click', (e) => {
+            if (!gameState.gameRunning) return;
+            
+            const number = parseInt(btn.dataset.answer);
+            gameState.missiles.push(new Missile(
+                gameState.player.x + gameState.player.width / 2 - 10,
+                gameState.player.y - 30,
+                number
+            ));
+        });
+        
+        btn.addEventListener('touchstart', (e) => {
+            e.preventDefault();
+            if (!gameState.gameRunning) return;
+            
+            const number = parseInt(btn.dataset.answer);
+            gameState.missiles.push(new Missile(
+                gameState.player.x + gameState.player.width / 2 - 10,
+                gameState.player.y - 30,
+                number
+            ));
+        });
+    });
+        
+    // ゲーム開始
+    initStars();
+    updateUI();
+    gameLoop();
     </script>
 </body>
 </html>
