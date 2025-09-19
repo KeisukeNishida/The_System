@@ -174,6 +174,7 @@
             keys: {}
         };
         
+        
         // 英単語データ（30個）
         const vocabularyData = [
             { word: "Administrator", options: ["管理者", "遊牧民", "国会議員", "両生類"], correct: 1 },
@@ -462,9 +463,6 @@ update() {
 
   // 背景（薄い影つきで視認性UP・任意）
   ctx.save();
-  ctx.shadowColor = 'rgba(0, 0, 0, 0.18)';
-  ctx.shadowBlur = 8;
-  ctx.shadowOffsetY = 3;
 
   ctx.fillStyle = 'rgba(255, 255, 255, 0.96)';
   roundRectPath(left, top, cardW, cardH, radius);
