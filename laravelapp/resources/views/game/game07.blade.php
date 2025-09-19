@@ -580,120 +580,243 @@ function drawWordCard(vocab, centerX, top, cardW = 160, cardH = 110) {
 
 
     // ボス
-    class Boss {
-        constructor() {
-            this.width  = 120;         // 主役より大きい
-            this.height = 100;
-            this.x = canvas.width / 2 - this.width / 2;
-            this.y = 80;
-            this.speed = 5;            // 俊敏
-            this.life = 10;            // ライフ10
-            this.lastMoveChange = 0;
-            this.moveTarget = { x: this.x, y: this.y };
-            this.lastBeamTime = 0;
-            this.beamInterval = 1000 / 5; // 1秒に5発
-            this.phase = Math.random() * Math.PI * 2;
-            this.vocab = hardVocabularyData[bossVocabIndex % hardVocabularyData.length];
-            bossVocabIndex++;
-        }
+    // ★★★ ここから Boss を全置換 ★★★
+class Boss {
+  constructor() {
+    this.width  = 140;       // 少し大きめの胴体
+    this.height = 120;
+    this.x = canvas.width / 2 - this.width / 2;
+    this.y = 100;
+    this.speed = 4;
+    this.life = 10;
 
-        pickNewTarget() {
-            const padX = 40, padY = 60;
-            const w = canvas.width, h = canvas.height;
-            // 画面上側60%で素早くランダム移動
-            this.moveTarget.x = Math.random() * (w - this.width  - padX*2) + padX;
-            this.moveTarget.y = Math.random() * (h * 0.6 - this.height - padY*2) + padY;
-        }
+    // 移動関連
+    this.lastMoveChange = 0;
+    this.moveTarget = { x: this.x, y: this.y };
+    this.phase = Math.random() * Math.PI * 2;
 
-        update(now) {
-            if (now - this.lastMoveChange > 600) {
-            this.lastMoveChange = now;
-            this.pickNewTarget();
-            }
-            const dx = this.moveTarget.x - this.x;
-            const dy = this.moveTarget.y - this.y;
-            const d  = Math.hypot(dx, dy) || 1;
-            const vx = (dx / d) * this.speed;
-            const vy = (dy / d) * this.speed;
-            this.x += vx * (1 + Math.sin(now * 0.01 + this.phase) * 0.2);
-            this.y += vy * (1 + Math.cos(now * 0.012 + this.phase) * 0.2);
+    // 単語
+    this.vocab = hardVocabularyData[bossVocabIndex % hardVocabularyData.length];
+    bossVocabIndex++;
 
-            // 画面内クランプ
-            this.x = Math.max(10, Math.min(this.x, canvas.width - this.width - 10));
-            this.y = Math.max(10, Math.min(this.y, canvas.height * 0.75 - this.height));
+    // === 攻撃サイクル ===
+    // 5秒攻撃（50発＝100msごと）→5秒休憩→…を繰り返す
+    this.attackDuration = 5000;
+    this.restDuration   = 5000;
+    this.cycleDuration  = this.attackDuration + this.restDuration;
+    this.shotInterval   = 100; // 100msで1発 → 5秒で50発
+    this.cycleStartTime = performance.now();
+    this.isAttacking    = true;   // 生成直後は攻撃フェーズから
+    this.prevAttacking  = true;
+    this.nextShotTime   = this.cycleStartTime; // フェーズ開始直後に撃ち始める
+  }
 
-            // ビーム連射
-            if (now - this.lastBeamTime > this.beamInterval) {
-            this.lastBeamTime = now;
-            this.fireBeam();
-            }
-        }
+  pickNewTarget() {
+    const padX = 40, padY = 60;
+    const w = canvas.width, h = canvas.height;
+    this.moveTarget.x = Math.random() * (w - this.width  - padX*2) + padX;
+    this.moveTarget.y = Math.random() * (h * 0.55 - this.height - padY*2) + padY;
+  }
 
-        fireBeam() {
-            const cx = this.x + this.width/2;
-            const cy = this.y + this.height/2;
-            const px = gameState.player.x + gameState.player.width/2;
-            const py = gameState.player.y + gameState.player.height/2;
-            let dx = px - cx, dy = py - cy;
-            const d = Math.hypot(dx, dy) || 1;
-            dx /= d; dy /= d;
+  update(now) {
+    // ---- 攻撃サイクル判定 ----
+    const tInCycle   = (now - this.cycleStartTime) % this.cycleDuration;
+    const attacking  = tInCycle < this.attackDuration;
+    const phaseStart = now - tInCycle; // 現在サイクルの開始時刻
+    const attackEnd  = phaseStart + this.attackDuration;
 
-            // 少し拡散させて撒き散らす
-            const spread = (Math.random() - 0.5) * 0.25;
-            const angle  = Math.atan2(dy, dx) + spread;
-            const speed  = 14; // 超高速
+    // フェーズ切り替え（休憩→攻撃 に入った瞬間に弾のスケジュールをリセット）
+    if (!this.prevAttacking && attacking) {
+      this.nextShotTime = phaseStart; // 攻撃フェーズ頭から100ms刻みで発射
+    }
+    this.prevAttacking = this.isAttacking;
+    this.isAttacking   = attacking;
 
-            gameState.bossBeams.push({
-            x: cx, y: cy,
-            vx: Math.cos(angle) * speed,
-            vy: Math.sin(angle) * speed,
-            r: 8
-            });
-        }
+    // ---- 攻撃（攻撃フェーズ中のみ100ms間隔で発射。5秒で50発）----
+    if (attacking) {
+      while (now >= this.nextShotTime && this.nextShotTime < attackEnd) {
+        this.fireBeam();
+        this.nextShotTime += this.shotInterval;
+      }
+    }
 
-        nextWord() {
-            this.vocab = hardVocabularyData[bossVocabIndex % hardVocabularyData.length];
-            bossVocabIndex++;
-        }
+    // ---- 機動（休憩中も動く。止めたい場合は attacking のときだけ移動するようにしてね）----
+    if (now - this.lastMoveChange > 700) {
+      this.lastMoveChange = now;
+      this.pickNewTarget();
+    }
+    const dx = this.moveTarget.x - this.x;
+    const dy = this.moveTarget.y - this.y;
+    const d  = Math.hypot(dx, dy) || 1;
+    const vx = (dx / d) * this.speed;
+    const vy = (dy / d) * this.speed;
+    this.x += vx * (1 + Math.sin(now * 0.01 + this.phase) * 0.15);
+    this.y += vy * (1 + Math.cos(now * 0.012 + this.phase) * 0.15);
 
-        draw() {
-            const cx = this.x + this.width/2, cy = this.y + this.height/2;
+    // 画面内に収める
+    this.x = Math.max(10, Math.min(this.x, canvas.width - this.width - 10));
+    this.y = Math.max(10, Math.min(this.y, canvas.height * 0.7 - this.height));
+  }
 
-            // 本体（黒→赤グラデ）
-            const g = ctx.createRadialGradient(cx-10, cy-15, 10, cx, cy, this.width);
-            g.addColorStop(0, '#330000');
-            g.addColorStop(0.5, '#550000');
-            g.addColorStop(1, '#000000');
-            ctx.fillStyle = g;
-            ctx.beginPath();
-            ctx.ellipse(cx, cy, this.width/2, this.height/2, 0, 0, Math.PI*2);
-            ctx.fill();
+  fireBeam() {
+    // プレイヤー狙いの赤い弾（少しばらける）
+    const cx = this.x + this.width/2;
+    const cy = this.y + this.height/2;
+    const px = gameState.player.x + gameState.player.width/2;
+    const py = gameState.player.y + gameState.player.height/2;
+    let dx = px - cx, dy = py - cy;
+    const dist = Math.hypot(dx, dy) || 1;
+    dx /= dist; dy /= dist;
 
-            // 赤い回転アイ
-            const t = performance.now() * 0.005;
-            ctx.save();
-            ctx.translate(cx, cy - 10);
-            ctx.rotate(t);
-            ctx.fillStyle = '#ff2222';
-            ctx.beginPath(); ctx.ellipse(0, 0, 18, 12, 0, 0, Math.PI*2); ctx.fill();
-            ctx.fillStyle = '#770000';
-            ctx.beginPath(); ctx.arc( 6, 0, 5, 0, Math.PI*2); ctx.fill();
-            ctx.beginPath(); ctx.arc(-6, 0, 5, 0, Math.PI*2); ctx.fill();
-            ctx.restore();
+    const spread = (Math.random() - 0.5) * 0.22;
+    const angle  = Math.atan2(dy, dx) + spread;
+    const speed  = 12;
 
-            // ツメ装飾
-            ctx.strokeStyle = '#440000'; ctx.lineWidth = 3;
-            for (let i = 0; i < 6; i++) {
-            const a = (i/6)*Math.PI*2 + t*0.4;
-            const ex = cx + Math.cos(a) * (this.width * 0.5);
-            const ey = cy + Math.sin(a) * (this.height * 0.45);
-            ctx.beginPath(); ctx.moveTo(ex, ey); ctx.lineTo(ex + Math.cos(a)*15, ey + Math.sin(a)*15); ctx.stroke();
-            }
+    gameState.bossBeams.push({
+      x: cx, y: cy,
+      vx: Math.cos(angle) * speed,
+      vy: Math.sin(angle) * speed,
+      r: 8
+    });
+  }
 
-            // 単語カード（ボス用は少し大きめ）
-            drawWordCard(this.vocab, cx, this.y - 20, 160, 110);
-        }
-        }
+  nextWord() {
+    this.vocab = hardVocabularyData[bossVocabIndex % hardVocabularyData.length];
+    bossVocabIndex++;
+  }
+
+  draw() {
+    const t  = performance.now() * 0.002 + this.phase;
+    const cx = this.x + this.width/2;
+    const cy = this.y + this.height/2;
+
+    // ===== 蜘蛛っぽい不気味な本体 =====
+    // 胴体（腹部＋頭胸部）
+    ctx.save();
+    // 影
+    ctx.fillStyle = 'rgba(0,0,0,0.35)';
+    ctx.beginPath();
+    ctx.ellipse(cx, this.y + this.height + 10, this.width*0.45, 12, 0, 0, Math.PI*2);
+    ctx.fill();
+
+    // 腹部（大きい楕円・暗いグラデ）
+    let g = ctx.createRadialGradient(cx-10, cy-10, 6, cx, cy, this.width*0.6);
+    g.addColorStop(0, '#1a0f14');
+    g.addColorStop(0.6, '#0b0508');
+    g.addColorStop(1, '#000000');
+    ctx.fillStyle = g;
+    ctx.beginPath();
+    ctx.ellipse(cx, cy+8, this.width*0.45, this.height*0.42, 0, 0, Math.PI*2);
+    ctx.fill();
+
+    // 頭胸部（前側の小さめの塊）
+    g = ctx.createRadialGradient(cx-6, cy-6, 4, cx+2, cy-2, this.width*0.28);
+    g.addColorStop(0, '#26151a');
+    g.addColorStop(1, '#040203');
+    ctx.fillStyle = g;
+    ctx.beginPath();
+    ctx.ellipse(cx, cy-18, this.width*0.28, this.height*0.22, 0, 0, Math.PI*2);
+    ctx.fill();
+
+    // 牙
+    ctx.fillStyle = '#e6e6e6';
+    const fangW = 8, fangH = 16;
+    ctx.beginPath();
+    ctx.moveTo(cx-10, cy-6);
+    ctx.lineTo(cx-10-fangW, cy-6+fangH);
+    ctx.lineTo(cx-10+fangW*0.3, cy-6+fangH*0.7);
+    ctx.closePath();
+    ctx.fill();
+    ctx.beginPath();
+    ctx.moveTo(cx+10, cy-6);
+    ctx.lineTo(cx+10+fangW, cy-6+fangH);
+    ctx.lineTo(cx+10-fangW*0.3, cy-6+fangH*0.7);
+    ctx.closePath();
+    ctx.fill();
+
+    // 目（赤い複眼 8個）
+    const eye = (ex, ey, r, a) => {
+      ctx.save();
+      ctx.globalAlpha = a;
+      const eg = ctx.createRadialGradient(ex-1, ey-1, 0, ex, ey, r*1.6);
+      eg.addColorStop(0, '#ff5555');
+      eg.addColorStop(0.6, '#990000');
+      eg.addColorStop(1, '#220000');
+      ctx.fillStyle = eg;
+      ctx.beginPath();
+      ctx.arc(ex, ey, r, 0, Math.PI*2);
+      ctx.fill();
+      ctx.restore();
+    };
+    const eyeR = 4;
+    const eyeLayout = [
+      [-18, -18], [-6, -20], [6, -20], [18, -18],
+      [-12, -10], [-4, -12], [4, -12], [12, -10],
+    ];
+    eyeLayout.forEach(([ox, oy], i) => {
+      const wob = Math.sin(t*3 + i) * 1.2;
+      eye(cx + ox + wob, cy + oy + wob*0.5, eyeR + (i%3===0?1:0), 0.9);
+    });
+
+    // 脚（8本・関節曲げて気持ち悪くウネる）
+    // 左右4本ずつ。各脚は3セグメント
+    const drawLeg = (side, order) => {
+      const baseX = cx + side * (this.width*0.25);
+      const baseY = cy - 10 + order*6;
+      const segLen = 26 + order*3;
+      const bend1  = (Math.sin(t*2 + order*0.6 + side*0.8) * 0.35) + (side>0?0.2:-0.2);
+      const bend2  = (Math.cos(t*2.4 + order*0.8 + side*0.3) * 0.45) + (side>0?0.3:-0.3);
+
+      // 関節座標の計算（ざっくり）
+      const j1x = baseX + side * segLen * Math.cos(0.2 + bend1);
+      const j1y = baseY + segLen * Math.sin(0.2 + bend1);
+      const j2x = j1x   + side * segLen * Math.cos(0.7 + bend2);
+      const j2y = j1y   + segLen * Math.sin(0.7 + bend2);
+      const tipx= j2x   + side * (segLen*0.9) * Math.cos(1.1 + bend2*0.8);
+      const tipy= j2y   + (segLen*0.9) * Math.sin(1.1 + bend2*0.8);
+
+      ctx.strokeStyle = '#1b0f12';
+      ctx.lineWidth = 5;
+      ctx.lineCap = 'round';
+      ctx.beginPath();
+      ctx.moveTo(baseX, baseY);
+      ctx.lineTo(j1x, j1y);
+      ctx.lineTo(j2x, j2y);
+      ctx.lineTo(tipx, tipy);
+      ctx.stroke();
+
+      ctx.strokeStyle = '#3a1f2a';
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      ctx.moveTo(baseX, baseY);
+      ctx.lineTo(j1x, j1y);
+      ctx.lineTo(j2x, j2y);
+      ctx.lineTo(tipx, tipy);
+      ctx.stroke();
+    };
+    for (let i = 0; i < 4; i++) { drawLeg(-1, i); drawLeg(+1, i); }
+
+    ctx.restore();
+
+    // ===== 単語カード（重ならないようにかなり上にずらす／画面上部固定気味）=====
+    const cardTop = Math.max(10, this.y - this.height - 140); // 上にオフセット
+    drawWordCard(this.vocab, cx, cardTop, 180, 120);
+
+    // 休憩中の淡いオーラ（何もしてない感の演出）
+    if (!this.isAttacking) {
+      ctx.save();
+      ctx.globalAlpha = 0.25;
+      ctx.strokeStyle = 'rgba(120,0,0,0.7)';
+      ctx.lineWidth = 3;
+      ctx.beginPath();
+      ctx.ellipse(cx, cy+2, this.width*0.55, this.height*0.48, 0, 0, Math.PI*2);
+      ctx.stroke();
+      ctx.restore();
+    }
+  }
+}
+// ★★★ ここまで Boss 全置換 ★★★
+
 
 
         
