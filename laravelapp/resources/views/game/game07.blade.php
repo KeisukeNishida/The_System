@@ -230,6 +230,30 @@
             });
         }
         
+// === 単語カードのサイズ（Enemy.drawの cardW/cardH と合わせる）===
+const CARD_W = 120;
+const CARD_H = 84;
+const CARD_OFFSET = 16; // 敵の頭上からカードまでのオフセット
+
+function enemyCardRect(e) {
+  const cx = e.x + e.width / 2;
+  return {
+    x: cx - CARD_W / 2,
+    y: e.y - (CARD_H + CARD_OFFSET),
+    w: CARD_W,
+    h: CARD_H
+  };
+}
+
+function rectsOverlap(a, b) {
+  return (
+    a.x < b.x + b.w &&
+    a.x + a.w > b.x &&
+    a.y < b.y + b.h &&
+    a.y + a.h > b.y
+  );
+}
+
         // 敵クラス
       // ==== 修正版 Enemy クラス（丸ピンク＋大きな目＋激しい羽） ====
 class Enemy {
@@ -249,45 +273,95 @@ class Enemy {
   }
 
   findValidPosition() {
-    const minDistance = 120;
-    let attempts = 0, x;
-    do {
-      x = Math.random() * (canvas.width - this.width);
-      attempts++;
-      let ok = true;
-      if (gameState && gameState.enemies) {
-        for (let e of gameState.enemies) {
-          const dx = Math.abs(x - e.x);
-          const dy = Math.abs(-this.height - e.y);
-          if (dx < minDistance && dy < 150) { ok = false; break; }
+  // Enemy.draw() のカードと同じサイズ・位置計算に合わせる
+  const CARD_W = 120, CARD_H = 84, CARD_OFFSET = 16;
+  const cardRectAt = (x, futureY, w, h) => ({
+    x: x + w/2 - CARD_W/2,
+    y: futureY - (CARD_H + CARD_OFFSET),
+    w: CARD_W, h: CARD_H
+  });
+  const overlap = (a, b) =>
+    a.x < b.x + b.w && a.x + a.w > b.x && a.y < b.y + b.h && a.y + a.h > b.y;
+
+  const attemptsMax = 40;
+  const margin = 8;
+
+  for (let attempt = 0; attempt < attemptsMax; attempt++) {
+    const x = Math.random() * (canvas.width - this.width);
+    const mine = cardRectAt(x, /*spawnY*/ -60, this.width, this.height);
+
+    let ok = true;
+    for (const other of gameState.enemies) {
+      if (!other) continue;
+      const theirs = cardRectAt(other.x, other.y, other.width, other.height);
+      const a = { x: mine.x - margin,   y: mine.y - margin,   w: mine.w + margin*2,   h: mine.h + margin*2 };
+      const b = { x: theirs.x - margin, y: theirs.y - margin, w: theirs.w + margin*2, h: theirs.h + margin*2 };
+      if (overlap(a, b)) { ok = false; break; }
+    }
+    if (ok) return x;
+  }
+  // 最後は妥協
+  return Math.random() * (canvas.width - this.width);
+}
+
+
+update() {
+  // Enemy.draw() のカードと同値にすること（ズレると判定と表示が合わない）
+  const CARD_W = 120, CARD_H = 84, CARD_OFFSET = 16, margin = 6;
+
+  const cardRectAt = (x, futureY, w, h) => ({
+    x: x + w/2 - CARD_W/2,
+    y: futureY - (CARD_H + CARD_OFFSET),
+    w: CARD_W, h: CARD_H
+  });
+  const overlap = (a, b) =>
+    a.x < b.x + b.w && a.x + a.w > b.x && a.y < b.y + b.h && a.y + a.h > b.y;
+
+  // ---- 落下（前方の敵カードに詰めすぎない）----
+  let nextY = this.y + this.speed;
+  const nextRect = cardRectAt(this.x, nextY, this.width, this.height);
+
+  if (Array.isArray(gameState.enemies)) {
+    for (const other of gameState.enemies) {
+      if (!other || other === this) continue;
+      if (other.y >= this.y) {
+        const oRect = cardRectAt(other.x, other.y, other.width, other.height);
+        const a = { x: nextRect.x - margin, y: nextRect.y - margin, w: nextRect.w + margin*2, h: nextRect.h + margin*2 };
+        const b = { x: oRect.x  - margin,  y: oRect.y  - margin,  w: oRect.w  + margin*2,  h: oRect.h  + margin*2 };
+        if (overlap(a, b)) {
+          const maxNextY = oRect.y - margin + CARD_OFFSET;
+          nextY = Math.min(nextY, maxNextY);
         }
       }
-      if (ok || attempts > 20) break;
-    } while (true);
-    // 念のためのフォールバック
-    if (!Number.isFinite(x)) x = (canvas.width - this.width) * 0.5;
-    return x;
-  }
-
-  update() {
-    this.y += this.speed;
-    const now = Date.now();
-    if (now - this.lastBeamTime > this.beamInterval) {
-      this.fireBeam();
-      this.lastBeamTime = now;
     }
-    return this.y < canvas.height + 100;
+  }
+  this.y = nextY;
+
+  // ---- ビーム発射タイマー ----
+  const now = Date.now();
+  if (!Number.isFinite(this.lastBeamTime)) this.lastBeamTime = 0;
+  if (!Number.isFinite(this.beamInterval)) this.beamInterval = 2000 + Math.random() * 2000;
+
+  if (now - this.lastBeamTime >= this.beamInterval) {
+    if (typeof this.fireBeam === 'function') {
+      this.fireBeam();
+    } else {
+      // 念のため：fireBeam が無い環境でも動かす最小実装
+      gameState.enemyBeams.push({
+        x: this.x + this.width / 2 - 2,
+        y: this.y + this.height,
+        width: 5, height: 15, speed: 3
+      });
+    }
+    this.lastBeamTime = now;
+    // 次の間隔を軽くランダム化（固定で良ければこの行は削除）
+    this.beamInterval = 1500 + Math.random() * 1500;
   }
 
-  fireBeam() {
-    gameState.enemyBeams.push({
-      x: this.x + this.width / 2 - 2,
-      y: this.y + this.height,
-      width: 5,
-      height: 15,
-      speed: 3
-    });
-  }
+  // 画面外で消滅
+  return this.y < canvas.height + 100;
+}
+
 
   draw() {
     const t  = gameState.animationTime;
