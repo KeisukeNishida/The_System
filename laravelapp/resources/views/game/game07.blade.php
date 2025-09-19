@@ -1510,10 +1510,10 @@ function updateEnemyBeams() {
 
             if (missile.number === enemy.vocab.correct) {
                 gameState.score += 100;
-                gameState.messages.push(new FloatingMessage(enemy.x + enemy.width/2, enemy.y - 10, "OK", "#ff0000"));
+                gameState.messages.push(new FloatingMessage(enemy.x + enemy.width/2, enemy.y - 10, "OK", "#00aaff"));
             } else {
                 gameState.life--;
-                gameState.messages.push(new FloatingMessage(enemy.x + enemy.width/2, enemy.y - 10, "MISS", "#0000ff"));
+                gameState.messages.push(new FloatingMessage(enemy.x + enemy.width/2, enemy.y - 10, "MISS", "#ff0000"));
             }
 
             gameState.missiles.splice(m, 1);
@@ -1538,7 +1538,7 @@ function updateEnemyBeams() {
             if (missile.number === b.vocab.correct) {
                 b.life--;
                 gameState.score += 200;
-                gameState.messages.push(new FloatingMessage(b.x + b.width/2, b.y - 10, "HIT!", "#ff4444"));
+                gameState.messages.push(new FloatingMessage(b.x + b.width/2, b.y - 10, "OK", "#00aaff"));
                 b.nextWord();
 
                 if (b.life <= 0) {
@@ -1549,7 +1549,7 @@ function updateEnemyBeams() {
             } else {
                 // ミスはプレイヤーにダメージ
                 gameState.life--;
-                gameState.messages.push(new FloatingMessage(b.x + b.width/2, b.y - 10, "MISS", "#00aaff"));
+                gameState.messages.push(new FloatingMessage(b.x + b.width/2, b.y - 10, "MISS", "#ff0000"));
             }
 
             gameState.missiles.splice(m, 1);
