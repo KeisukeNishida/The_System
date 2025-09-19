@@ -685,135 +685,226 @@ class Boss {
     bossVocabIndex++;
   }
 
-  draw() {
-    const t  = performance.now() * 0.002 + this.phase;
-    const cx = this.x + this.width/2;
-    const cy = this.y + this.height/2;
+  // Boss.draw だけ差し替え
+draw() {
+  const now = performance.now();
+  const t  = now * 0.002 + this.phase;
+  const cx = this.x + this.width/2;
+  const cy = this.y + this.height/2;
 
-    // ===== 蜘蛛っぽい不気味な本体 =====
-    // 胴体（腹部＋頭胸部）
-    ctx.save();
-    // 影
-    ctx.fillStyle = 'rgba(0,0,0,0.35)';
-    ctx.beginPath();
-    ctx.ellipse(cx, this.y + this.height + 10, this.width*0.45, 12, 0, 0, Math.PI*2);
-    ctx.fill();
+  // ====== 悪魔の羽（背面・大きく激しく動く）======
+  // 強めのフラップ（角度＆伸縮が大きい）
+  const flap = Math.sin(t * 3.2);         // 振動数
+  const wingAngle = flap * 0.95;          // 角度の振れ（約±54°）
+  const wingStretch = 1 + Math.abs(flap) * 0.45; // 伸縮で“バサッ”感
 
-    // 腹部（大きい楕円・暗いグラデ）
-    let g = ctx.createRadialGradient(cx-10, cy-10, 6, cx, cy, this.width*0.6);
-    g.addColorStop(0, '#1a0f14');
-    g.addColorStop(0.6, '#0b0508');
-    g.addColorStop(1, '#000000');
-    ctx.fillStyle = g;
-    ctx.beginPath();
-    ctx.ellipse(cx, cy+8, this.width*0.45, this.height*0.42, 0, 0, Math.PI*2);
-    ctx.fill();
+  const drawDemonWing = (side) => {
+    // side: -1=左 / +1=右（左右対称に反転）
+    const baseX = cx + side * (this.width * 0.36);
+    const baseY = cy - 10;
 
-    // 頭胸部（前側の小さめの塊）
-    g = ctx.createRadialGradient(cx-6, cy-6, 4, cx+2, cy-2, this.width*0.28);
-    g.addColorStop(0, '#26151a');
-    g.addColorStop(1, '#040203');
-    ctx.fillStyle = g;
-    ctx.beginPath();
-    ctx.ellipse(cx, cy-18, this.width*0.28, this.height*0.22, 0, 0, Math.PI*2);
-    ctx.fill();
+    // スパイン（骨）を何本か放射状に
+    const spines = [];
+    const spineCount = 4; // 指の本数
+    for (let i = 0; i < spineCount; i++) {
+      // 各スパインの角度（外側ほど下向き）
+      const a0 = -0.15 - i * 0.35;              // ベース角
+      const wob = Math.sin(t * 2.4 + i) * 0.12; // わずかにうねる
+      const ang = a0 + wob + wingAngle;         // フラップ反映
+      const len = (64 + i * 18) * wingStretch;  // 外側ほど長い
+      const ex = baseX + side * Math.cos(ang) * len;
+      const ey = baseY + Math.sin(ang) * len;
 
-    // 牙
-    ctx.fillStyle = '#e6e6e6';
-    const fangW = 8, fangH = 16;
-    ctx.beginPath();
-    ctx.moveTo(cx-10, cy-6);
-    ctx.lineTo(cx-10-fangW, cy-6+fangH);
-    ctx.lineTo(cx-10+fangW*0.3, cy-6+fangH*0.7);
-    ctx.closePath();
-    ctx.fill();
-    ctx.beginPath();
-    ctx.moveTo(cx+10, cy-6);
-    ctx.lineTo(cx+10+fangW, cy-6+fangH);
-    ctx.lineTo(cx+10-fangW*0.3, cy-6+fangH*0.7);
-    ctx.closePath();
-    ctx.fill();
-
-    // 目（赤い複眼 8個）
-    const eye = (ex, ey, r, a) => {
-      ctx.save();
-      ctx.globalAlpha = a;
-      const eg = ctx.createRadialGradient(ex-1, ey-1, 0, ex, ey, r*1.6);
-      eg.addColorStop(0, '#ff5555');
-      eg.addColorStop(0.6, '#990000');
-      eg.addColorStop(1, '#220000');
-      ctx.fillStyle = eg;
-      ctx.beginPath();
-      ctx.arc(ex, ey, r, 0, Math.PI*2);
-      ctx.fill();
-      ctx.restore();
-    };
-    const eyeR = 4;
-    const eyeLayout = [
-      [-18, -18], [-6, -20], [6, -20], [18, -18],
-      [-12, -10], [-4, -12], [4, -12], [12, -10],
-    ];
-    eyeLayout.forEach(([ox, oy], i) => {
-      const wob = Math.sin(t*3 + i) * 1.2;
-      eye(cx + ox + wob, cy + oy + wob*0.5, eyeR + (i%3===0?1:0), 0.9);
-    });
-
-    // 脚（8本・関節曲げて気持ち悪くウネる）
-    // 左右4本ずつ。各脚は3セグメント
-    const drawLeg = (side, order) => {
-      const baseX = cx + side * (this.width*0.25);
-      const baseY = cy - 10 + order*6;
-      const segLen = 26 + order*3;
-      const bend1  = (Math.sin(t*2 + order*0.6 + side*0.8) * 0.35) + (side>0?0.2:-0.2);
-      const bend2  = (Math.cos(t*2.4 + order*0.8 + side*0.3) * 0.45) + (side>0?0.3:-0.3);
-
-      // 関節座標の計算（ざっくり）
-      const j1x = baseX + side * segLen * Math.cos(0.2 + bend1);
-      const j1y = baseY + segLen * Math.sin(0.2 + bend1);
-      const j2x = j1x   + side * segLen * Math.cos(0.7 + bend2);
-      const j2y = j1y   + segLen * Math.sin(0.7 + bend2);
-      const tipx= j2x   + side * (segLen*0.9) * Math.cos(1.1 + bend2*0.8);
-      const tipy= j2y   + (segLen*0.9) * Math.sin(1.1 + bend2*0.8);
-
-      ctx.strokeStyle = '#1b0f12';
-      ctx.lineWidth = 5;
+      // 骨（太い→細い）
+      const grd = ctx.createLinearGradient(baseX, baseY, ex, ey);
+      grd.addColorStop(0, '#240000');
+      grd.addColorStop(1, '#5a0a0a');
+      ctx.strokeStyle = grd;
       ctx.lineCap = 'round';
+      ctx.lineWidth = 6 - i * 1.2;
       ctx.beginPath();
       ctx.moveTo(baseX, baseY);
-      ctx.lineTo(j1x, j1y);
-      ctx.lineTo(j2x, j2y);
-      ctx.lineTo(tipx, tipy);
+      ctx.lineTo(ex, ey);
       ctx.stroke();
 
-      ctx.strokeStyle = '#3a1f2a';
-      ctx.lineWidth = 2;
+      spines.push({ x: ex, y: ey });
+    }
+
+    // 膜（スパイン同士を三角～四角形で結び、悪魔っぽいギザギザ）
+    ctx.save();
+    ctx.globalAlpha = 0.72; // 透ける膜
+    for (let i = 0; i < spines.length; i++) {
+      const p0 = { x: baseX, y: baseY };
+      const p1 = spines[i];
+      const p2 = spines[Math.min(i + 1, spines.length - 1)];
+
+      // 暗赤～黒のグラデ膜
+      const mg = ctx.createLinearGradient(p0.x, p0.y, p1.x, p1.y);
+      mg.addColorStop(0, 'rgba(120, 0, 0, 0.9)');
+      mg.addColorStop(1, 'rgba(20, 0, 0, 0.95)');
+      ctx.fillStyle = mg;
+      ctx.strokeStyle = 'rgba(255, 30, 30, 0.15)';
+      ctx.lineWidth = 1.2;
+
       ctx.beginPath();
-      ctx.moveTo(baseX, baseY);
-      ctx.lineTo(j1x, j1y);
-      ctx.lineTo(j2x, j2y);
-      ctx.lineTo(tipx, tipy);
+      ctx.moveTo(p0.x, p0.y);
+      ctx.lineTo(p1.x, p1.y);
+      ctx.lineTo(p2.x, p2.y);
+      ctx.closePath();
+      ctx.fill();
       ctx.stroke();
-    };
-    for (let i = 0; i < 4; i++) { drawLeg(-1, i); drawLeg(+1, i); }
-
+    }
     ctx.restore();
 
-    // ===== 単語カード（重ならないようにかなり上にずらす／画面上部固定気味）=====
-    const cardTop = Math.max(10, this.y - this.height - 140); // 上にオフセット
-    drawWordCard(this.vocab, cx, cardTop, 180, 120);
-
-    // 休憩中の淡いオーラ（何もしてない感の演出）
-    if (!this.isAttacking) {
-      ctx.save();
-      ctx.globalAlpha = 0.25;
-      ctx.strokeStyle = 'rgba(120,0,0,0.7)';
-      ctx.lineWidth = 3;
+    // 膜の縁にトゲ（ギザギザ）
+    ctx.save();
+    ctx.strokeStyle = 'rgba(180, 0, 0, 0.45)';
+    ctx.lineWidth = 1.5;
+    for (let i = 0; i < spines.length - 1; i++) {
+      const a = spines[i], b = spines[i + 1];
+      const mx = (a.x + b.x) / 2;
+      const my = (a.y + b.y) / 2;
+      // 外側に小トゲ
+      const vx = (b.y - a.y);
+      const vy = -(b.x - a.x);
+      const vlen = Math.hypot(vx, vy) || 1;
+      const nx = (vx / vlen) * 10 * wingStretch * (side === -1 ? 1 : -1);
+      const ny = (vy / vlen) * 10 * wingStretch;
       ctx.beginPath();
-      ctx.ellipse(cx, cy+2, this.width*0.55, this.height*0.48, 0, 0, Math.PI*2);
+      ctx.moveTo(mx, my);
+      ctx.lineTo(mx + nx, my + ny);
       ctx.stroke();
-      ctx.restore();
     }
+    ctx.restore();
+  };
+
+  // 羽は“背面”なので、本体を描く前に描画
+  ctx.save();
+  drawDemonWing(-1);
+  drawDemonWing(+1);
+  ctx.restore();
+
+  // ===== 蜘蛛っぽい不気味な本体（前回のまま） =====
+  ctx.save();
+  // 影
+  ctx.fillStyle = 'rgba(0,0,0,0.35)';
+  ctx.beginPath();
+  ctx.ellipse(cx, this.y + this.height + 10, this.width*0.45, 12, 0, 0, Math.PI*2);
+  ctx.fill();
+
+  // 腹部
+  let g = ctx.createRadialGradient(cx-10, cy-10, 6, cx, cy, this.width*0.6);
+  g.addColorStop(0, '#1a0f14');
+  g.addColorStop(0.6, '#0b0508');
+  g.addColorStop(1, '#000000');
+  ctx.fillStyle = g;
+  ctx.beginPath();
+  ctx.ellipse(cx, cy+8, this.width*0.45, this.height*0.42, 0, 0, Math.PI*2);
+  ctx.fill();
+
+  // 頭胸部
+  g = ctx.createRadialGradient(cx-6, cy-6, 4, cx+2, cy-2, this.width*0.28);
+  g.addColorStop(0, '#26151a');
+  g.addColorStop(1, '#040203');
+  ctx.fillStyle = g;
+  ctx.beginPath();
+  ctx.ellipse(cx, cy-18, this.width*0.28, this.height*0.22, 0, 0, Math.PI*2);
+  ctx.fill();
+
+  // 牙
+  ctx.fillStyle = '#e6e6e6';
+  const fangW = 8, fangH = 16;
+  ctx.beginPath();
+  ctx.moveTo(cx-10, cy-6);
+  ctx.lineTo(cx-10-fangW, cy-6+fangH);
+  ctx.lineTo(cx-10+fangW*0.3, cy-6+fangH*0.7);
+  ctx.closePath();
+  ctx.fill();
+  ctx.beginPath();
+  ctx.moveTo(cx+10, cy-6);
+  ctx.lineTo(cx+10+fangW, cy-6+fangH);
+  ctx.lineTo(cx+10-fangW*0.3, cy-6+fangH*0.7);
+  ctx.closePath();
+  ctx.fill();
+
+  // 赤い複眼
+  const eye = (ex, ey, r, a) => {
+    ctx.save();
+    ctx.globalAlpha = a;
+    const eg = ctx.createRadialGradient(ex-1, ey-1, 0, ex, ey, r*1.6);
+    eg.addColorStop(0, '#ff5555');
+    eg.addColorStop(0.6, '#990000');
+    eg.addColorStop(1, '#220000');
+    ctx.fillStyle = eg;
+    ctx.beginPath();
+    ctx.arc(ex, ey, r, 0, Math.PI*2);
+    ctx.fill();
+    ctx.restore();
+  };
+  const eyeR = 4;
+  const eyeLayout = [
+    [-18, -18], [-6, -20], [6, -20], [18, -18],
+    [-12, -10], [-4, -12], [4, -12], [12, -10],
+  ];
+  eyeLayout.forEach(([ox, oy], i) => {
+    const wob = Math.sin(t*3 + i) * 1.2;
+    eye(cx + ox + wob, cy + oy + wob*0.5, eyeR + (i%3===0?1:0), 0.9);
+  });
+
+  // 脚（8本）
+  const drawLeg = (side, order) => {
+    const baseX = cx + side * (this.width*0.25);
+    const baseY = cy - 10 + order*6;
+    const segLen = 26 + order*3;
+    const bend1  = (Math.sin(t*2 + order*0.6 + side*0.8) * 0.35) + (side>0?0.2:-0.2);
+    const bend2  = (Math.cos(t*2.4 + order*0.8 + side*0.3) * 0.45) + (side>0?0.3:-0.3);
+
+    const j1x = baseX + side * segLen * Math.cos(0.2 + bend1);
+    const j1y = baseY + segLen * Math.sin(0.2 + bend1);
+    const j2x = j1x   + side * segLen * Math.cos(0.7 + bend2);
+    const j2y = j1y   + segLen * Math.sin(0.7 + bend2);
+    const tipx= j2x   + side * (segLen*0.9) * Math.cos(1.1 + bend2*0.8);
+    const tipy= j2y   + (segLen*0.9) * Math.sin(1.1 + bend2*0.8);
+
+    ctx.strokeStyle = '#1b0f12';
+    ctx.lineWidth = 5;
+    ctx.lineCap = 'round';
+    ctx.beginPath();
+    ctx.moveTo(baseX, baseY);
+    ctx.lineTo(j1x, j1y);
+    ctx.lineTo(j2x, j2y);
+    ctx.lineTo(tipx, tipy);
+    ctx.stroke();
+
+    ctx.strokeStyle = '#3a1f2a';
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.moveTo(baseX, baseY);
+    ctx.lineTo(j1x, j1y);
+    ctx.lineTo(j2x, j2y);
+    ctx.lineTo(tipx, tipy);
+    ctx.stroke();
+  };
+  for (let i = 0; i < 4; i++) { drawLeg(-1, i); drawLeg(+1, i); }
+  ctx.restore();
+
+  // ===== 単語カード（重ならないよう上に）=====
+  const cardTop = Math.max(10, this.y - this.height - 140);
+  drawWordCard(this.vocab, cx, cardTop, 180, 120);
+
+  // 休憩中のオーラ
+  if (!this.isAttacking) {
+    ctx.save();
+    ctx.globalAlpha = 0.25;
+    ctx.strokeStyle = 'rgba(120,0,0,0.7)';
+    ctx.lineWidth = 3;
+    ctx.beginPath();
+    ctx.ellipse(cx, cy+2, this.width*0.55, this.height*0.48, 0, 0, Math.PI*2);
+    ctx.stroke();
+    ctx.restore();
   }
+}
+
 }
 // ★★★ ここまで Boss 全置換 ★★★
 
