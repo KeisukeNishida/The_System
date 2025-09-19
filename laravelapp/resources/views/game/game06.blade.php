@@ -81,7 +81,7 @@
     </div>
     
     <div class="instructions">
-        数字キー1-4で正しい答えを選んで攻撃！
+        数字キー1-4で正しい答えを選んで攻撃！矢印キーで移動
     </div>
     
     <div class="game-over" id="gameOver">
@@ -104,12 +104,16 @@
             enemies: [],
             missiles: [],
             enemyBeams: [],
+            explosions: [],
+            messages: [],
+            stars: [],
             player: {
                 x: canvas.width / 2 - 25,
                 y: canvas.height - 80,
                 width: 50,
                 height: 40
-            }
+            },
+            keys: {}
         };
         
         // 英単語データ（30個）
@@ -148,18 +152,68 @@
         
         let currentVocabIndex = 0;
         
+        // 星空初期化
+        function initStars() {
+            gameState.stars = [];
+            for (let i = 0; i < 100; i++) {
+                gameState.stars.push({
+                    x: Math.random() * canvas.width,
+                    y: Math.random() * canvas.height,
+                    size: Math.random() * 2 + 1
+                });
+            }
+        }
+        
+        // 星空描画
+        function drawStars() {
+            ctx.fillStyle = '#ffffff';
+            gameState.stars.forEach(star => {
+                ctx.fillRect(star.x, star.y, star.size, star.size);
+            });
+        }
+        
         // 敵クラス
         class Enemy {
             constructor() {
-                this.x = Math.random() * (canvas.width - 120);
-                this.y = -100;
-                this.width = 120;
-                this.height = 140;
+                this.x = this.findValidPosition();
+                this.y = -60;
+                this.width = 60;
+                this.height = 80;
                 this.speed = 1 + Math.random();
                 this.vocab = vocabularyData[currentVocabIndex % vocabularyData.length];
                 this.lastBeamTime = 0;
                 this.beamInterval = 2000 + Math.random() * 2000;
                 currentVocabIndex++;
+            }
+            
+            findValidPosition() {
+                const minDistance = 120; // 敵同士の最小距離
+                let attempts = 0;
+                let x;
+                
+                do {
+                    x = Math.random() * (canvas.width - 60);
+                    attempts++;
+                    
+                    // 他の敵との距離をチェック
+                    let validPosition = true;
+                    if (gameState && gameState.enemies) {
+                        for (let enemy of gameState.enemies) {
+                            const distance = Math.abs(x - enemy.x);
+                            const yDistance = Math.abs(-60 - enemy.y);
+                            if (distance < minDistance && yDistance < 150) {
+                                validPosition = false;
+                                break;
+                            }
+                        }
+                    }
+                    
+                    if (validPosition || attempts > 20) {
+                        break;
+                    }
+                } while (true);
+                
+                return x;
             }
             
             update() {
@@ -186,50 +240,131 @@
             }
             
             draw() {
-                // 狂気の天使デザイン
+                // 狂気の天使デザイン（さらに小さくなったサイズ）
                 ctx.save();
                 
                 // 本体（不気味な天使）
                 ctx.fillStyle = '#ffffff';
-                ctx.fillRect(this.x + 40, this.y + 60, 40, 60);
+                ctx.fillRect(this.x + 20, this.y + 30, 20, 30);
                 
                 // 翼（歪んだ）
                 ctx.fillStyle = '#ffeeaa';
-                ctx.fillRect(this.x, this.y + 40, 30, 80);
-                ctx.fillRect(this.x + 90, this.y + 40, 30, 80);
+                ctx.fillRect(this.x, this.y + 25, 15, 40);
+                ctx.fillRect(this.x + 45, this.y + 25, 15, 40);
                 
                 // 目（狂気）
                 ctx.fillStyle = '#ff0000';
-                ctx.fillRect(this.x + 45, this.y + 65, 8, 8);
-                ctx.fillRect(this.x + 67, this.y + 65, 8, 8);
+                ctx.fillRect(this.x + 23, this.y + 33, 4, 4);
+                ctx.fillRect(this.x + 33, this.y + 33, 4, 4);
                 
                 // ハロー（歪んだ）
                 ctx.strokeStyle = '#ffff00';
-                ctx.lineWidth = 3;
+                ctx.lineWidth = 2;
                 ctx.beginPath();
-                ctx.arc(this.x + 60, this.y + 50, 25, 0, Math.PI * 2);
+                ctx.arc(this.x + 30, this.y + 25, 12, 0, Math.PI * 2);
                 ctx.stroke();
                 
                 ctx.restore();
                 
-                // 単語カード
-                ctx.fillStyle = 'rgba(255, 255, 255, 0.9)';
-                ctx.fillRect(this.x - 10, this.y - 50, 140, 80);
+                // 単語カード（さらに大きく調整）
+                ctx.fillStyle = 'rgba(255, 255, 255, 0.95)';
+                ctx.fillRect(this.x - 10, this.y - 40, 80, 60);
                 
                 ctx.fillStyle = '#000';
-                ctx.font = '16px Arial';
+                ctx.font = '11px Arial';
                 ctx.textAlign = 'center';
-                ctx.fillText(this.vocab.word, this.x + 60, this.y - 25);
+                ctx.fillText(this.vocab.word, this.x + 30, this.y - 28);
                 
-                ctx.font = '12px Arial';
+                ctx.font = '9px Arial';
                 ctx.textAlign = 'left';
                 for (let i = 0; i < 4; i++) {
-                    ctx.fillText(`${i+1}.${this.vocab.options[i]}`, this.x - 5, this.y - 5 + i * 15);
+                    const text = `${i+1}.${this.vocab.options[i]}`;
+                    const maxLength = 10; // 最大文字数を増やす
+                    const displayText = text.length > maxLength ? text.substring(0, maxLength) + '...' : text;
+                    ctx.fillText(displayText, this.x - 7, this.y - 15 + i * 11);
                 }
             }
         }
         
-        // ミサイルクラス
+        // メッセージクラス
+        class FloatingMessage {
+            constructor(x, y, text, color) {
+                this.x = x;
+                this.y = y;
+                this.text = text;
+                this.color = color;
+                this.life = 30; // 0.5秒 (60fps基準で30フレーム)
+                this.maxLife = 30;
+                this.startY = y;
+            }
+            
+            update() {
+                this.life--;
+                // メッセージが上に浮上
+                this.y = this.startY - (this.maxLife - this.life) * 2;
+                return this.life > 0;
+            }
+            
+            draw() {
+                const alpha = this.life / this.maxLife;
+                ctx.save();
+                ctx.globalAlpha = alpha;
+                ctx.font = 'bold 20px Arial';
+                ctx.fillStyle = this.color;
+                ctx.textAlign = 'center';
+                ctx.strokeStyle = '#000000';
+                ctx.lineWidth = 2;
+                
+                // 文字の縁取り
+                ctx.strokeText(this.text, this.x, this.y);
+                // 文字本体
+                ctx.fillText(this.text, this.x, this.y);
+                
+                ctx.restore();
+            }
+        }
+        class Explosion {
+            constructor(x, y) {
+                this.x = x;
+                this.y = y;
+                this.radius = 10;
+                this.maxRadius = 40;
+                this.life = 30;
+                this.maxLife = 30;
+            }
+            
+            update() {
+                this.life--;
+                this.radius = (this.maxRadius * (this.maxLife - this.life)) / this.maxLife;
+                return this.life > 0;
+            }
+            
+            draw() {
+                const alpha = this.life / this.maxLife;
+                ctx.save();
+                ctx.globalAlpha = alpha;
+                
+                // 外側の爆発
+                ctx.fillStyle = '#ff6600';
+                ctx.beginPath();
+                ctx.arc(this.x, this.y, this.radius, 0, Math.PI * 2);
+                ctx.fill();
+                
+                // 内側の爆発
+                ctx.fillStyle = '#ffff00';
+                ctx.beginPath();
+                ctx.arc(this.x, this.y, this.radius * 0.6, 0, Math.PI * 2);
+                ctx.fill();
+                
+                // 中心の爆発
+                ctx.fillStyle = '#ffffff';
+                ctx.beginPath();
+                ctx.arc(this.x, this.y, this.radius * 0.3, 0, Math.PI * 2);
+                ctx.fill();
+                
+                ctx.restore();
+            }
+        }
         class Missile {
             constructor(x, y, number) {
                 this.x = x;
@@ -295,6 +430,13 @@
                     beam.x + beam.width > gameState.player.x &&
                     beam.y < gameState.player.y + gameState.player.height &&
                     beam.y + beam.height > gameState.player.y) {
+                    
+                    // プレイヤーに爆発エフェクト
+                    gameState.explosions.push(new Explosion(
+                        gameState.player.x + gameState.player.width / 2,
+                        gameState.player.y + gameState.player.height / 2
+                    ));
+                    
                     gameState.life--;
                     updateUI();
                     return false;
@@ -312,29 +454,119 @@
         
         // 衝突判定
         function checkCollisions() {
-            gameState.missiles.forEach((missile, mIndex) => {
-                gameState.enemies.forEach((enemy, eIndex) => {
-                    if (missile.x < enemy.x + enemy.width &&
-                        missile.x + missile.width > enemy.x &&
-                        missile.y < enemy.y + enemy.height &&
-                        missile.y + missile.height > enemy.y) {
+            try {
+                if (!gameState.missiles || !gameState.enemies) return;
+                
+                for (let mIndex = gameState.missiles.length - 1; mIndex >= 0; mIndex--) {
+                    const missile = gameState.missiles[mIndex];
+                    if (!missile) continue;
+                    
+                    for (let eIndex = gameState.enemies.length - 1; eIndex >= 0; eIndex--) {
+                        const enemy = gameState.enemies[eIndex];
+                        if (!enemy) continue;
                         
-                        // 正解チェック
-                        if (missile.number === enemy.vocab.correct) {
-                            gameState.score += 100;
-                        } else {
-                            gameState.life--;
+                        if (missile.x < enemy.x + enemy.width &&
+                            missile.x + missile.width > enemy.x &&
+                            missile.y < enemy.y + enemy.height &&
+                            missile.y + missile.height > enemy.y) {
+                            
+                            // 敵に爆発エフェクト
+                            gameState.explosions.push(new Explosion(
+                                enemy.x + enemy.width / 2,
+                                enemy.y + enemy.height / 2
+                            ));
+                            
+                            // 正解チェック
+                            if (missile.number === enemy.vocab.correct) {
+                                gameState.score += 100;
+                                // "OK"メッセージを表示（赤字）
+                                gameState.messages.push(new FloatingMessage(
+                                    enemy.x + enemy.width / 2,
+                                    enemy.y - 10,
+                                    "OK",
+                                    "#ff0000"
+                                ));
+                            } else {
+                                gameState.life--;
+                                // "MISS"メッセージを表示（青字）
+                                gameState.messages.push(new FloatingMessage(
+                                    enemy.x + enemy.width / 2,
+                                    enemy.y - 10,
+                                    "MISS",
+                                    "#0000ff"
+                                ));
+                            }
+                            
+                            gameState.missiles.splice(mIndex, 1);
+                            gameState.enemies.splice(eIndex, 1);
+                            updateUI();
+                            break;
                         }
-                        
-                        gameState.missiles.splice(mIndex, 1);
-                        gameState.enemies.splice(eIndex, 1);
-                        updateUI();
                     }
-                });
-            });
+                }
+            } catch (error) {
+                console.error('衝突判定エラー:', error.message);
+            }
         }
         
-        // UI更新
+        // プレイヤーと敵の衝突判定
+        function checkPlayerEnemyCollisions() {
+            try {
+                if (!gameState.enemies || !gameState.player) return;
+                
+                for (let eIndex = gameState.enemies.length - 1; eIndex >= 0; eIndex--) {
+                    const enemy = gameState.enemies[eIndex];
+                    if (!enemy) continue;
+                    
+                    if (gameState.player.x < enemy.x + enemy.width &&
+                        gameState.player.x + gameState.player.width > enemy.x &&
+                        gameState.player.y < enemy.y + enemy.height &&
+                        gameState.player.y + gameState.player.height > enemy.y) {
+                        
+                        // プレイヤーに爆発エフェクト
+                        gameState.explosions.push(new Explosion(
+                            gameState.player.x + gameState.player.width / 2,
+                            gameState.player.y + gameState.player.height / 2
+                        ));
+                        
+                        // 敵にも爆発エフェクト
+                        gameState.explosions.push(new Explosion(
+                            enemy.x + enemy.width / 2,
+                            enemy.y + enemy.height / 2
+                        ));
+                        
+                        // 敵を消滅させる
+                        gameState.enemies.splice(eIndex, 1);
+                        
+                        // プレイヤーのライフを1減らす
+                        gameState.life--;
+                        updateUI();
+                        
+                        // 1回の衝突のみ処理
+                        break;
+                    }
+                }
+            } catch (error) {
+                console.error('プレイヤー衝突判定エラー:', error.message);
+            }
+        }
+        
+        // プレイヤー更新（なめらかな移動）
+        function updatePlayer() {
+            const moveSpeed = 8;
+            if (gameState.keys['ArrowLeft'] && gameState.player.x > 0) {
+                gameState.player.x -= moveSpeed;
+            }
+            if (gameState.keys['ArrowRight'] && gameState.player.x < canvas.width - gameState.player.width) {
+                gameState.player.x += moveSpeed;
+            }
+            if (gameState.keys['ArrowUp'] && gameState.player.y > 0) {
+                gameState.player.y -= moveSpeed;
+            }
+            if (gameState.keys['ArrowDown'] && gameState.player.y < canvas.height - gameState.player.height) {
+                gameState.player.y += moveSpeed;
+            }
+        }
         function updateUI() {
             document.getElementById('lifeCount').textContent = gameState.life;
             document.getElementById('scoreCount').textContent = gameState.score;
@@ -342,55 +574,95 @@
         
         // 敵生成
         function spawnEnemy() {
-            if (Math.random() < 0.02) {
-                gameState.enemies.push(new Enemy());
+            try {
+                // 敵の生成頻度を少し下げて重なりを防ぐ
+                if (Math.random() < 0.015 && gameState.enemies.length < 4) {
+                    const newEnemy = new Enemy();
+                    gameState.enemies.push(newEnemy);
+                }
+            } catch (error) {
+                console.error('敵生成エラー:', error.message);
             }
         }
         
         // ゲームループ
         function gameLoop() {
-            if (!gameState.gameRunning) return;
-            
-            // ライフチェック
-            if (gameState.life <= 0) {
-                gameOver();
-                return;
+            try {
+                if (!gameState.gameRunning) return;
+                
+                // ライフチェック
+                if (gameState.life <= 0) {
+                    gameOver();
+                    return;
+                }
+                
+                // 画面クリア
+                ctx.clearRect(0, 0, canvas.width, canvas.height);
+                
+                // 星空背景（固定）
+                drawStars();
+                
+                // 敵生成
+                spawnEnemy();
+                
+                // 敵更新・描画
+                gameState.enemies = gameState.enemies.filter(enemy => {
+                    if (enemy && typeof enemy.draw === 'function' && typeof enemy.update === 'function') {
+                        enemy.draw();
+                        return enemy.update();
+                    }
+                    return false;
+                });
+                
+                // ミサイル更新・描画
+                gameState.missiles = gameState.missiles.filter(missile => {
+                    if (missile && typeof missile.draw === 'function' && typeof missile.update === 'function') {
+                        missile.draw();
+                        return missile.update();
+                    }
+                    return false;
+                });
+                
+                // 敵ビーム更新
+                updateEnemyBeams();
+                
+                // 衝突判定
+                checkCollisions();
+                
+                // プレイヤーと敵の衝突判定
+                checkPlayerEnemyCollisions();
+                
+                // 爆発更新・描画
+                gameState.explosions = gameState.explosions.filter(explosion => {
+                    if (explosion && typeof explosion.draw === 'function' && typeof explosion.update === 'function') {
+                        explosion.draw();
+                        return explosion.update();
+                    }
+                    return false;
+                });
+                
+                // メッセージ更新・描画
+                gameState.messages = gameState.messages.filter(message => {
+                    if (message && typeof message.draw === 'function' && typeof message.update === 'function') {
+                        message.draw();
+                        return message.update();
+                    }
+                    return false;
+                });
+                
+                // プレイヤー更新
+                updatePlayer();
+                
+                // プレイヤー描画
+                drawPlayer();
+                
+                requestAnimationFrame(gameLoop);
+            } catch (error) {
+                console.error('ゲームループエラー詳細:', error.message);
+                console.error('スタックトレース:', error.stack);
+                console.error('gameState:', gameState);
+                gameState.gameRunning = false;
             }
-            
-            // 画面クリア
-            ctx.clearRect(0, 0, canvas.width, canvas.height);
-            
-            // 星空背景
-            for (let i = 0; i < 50; i++) {
-                ctx.fillStyle = '#ffffff';
-                ctx.fillRect(Math.random() * canvas.width, Math.random() * canvas.height, 1, 1);
-            }
-            
-            // 敵生成
-            spawnEnemy();
-            
-            // 敵更新・描画
-            gameState.enemies = gameState.enemies.filter(enemy => {
-                enemy.draw();
-                return enemy.update();
-            });
-            
-            // ミサイル更新・描画
-            gameState.missiles = gameState.missiles.filter(missile => {
-                missile.draw();
-                return missile.update();
-            });
-            
-            // 敵ビーム更新
-            updateEnemyBeams();
-            
-            // 衝突判定
-            checkCollisions();
-            
-            // プレイヤー描画
-            drawPlayer();
-            
-            requestAnimationFrame(gameLoop);
         }
         
         // ゲームオーバー
@@ -409,14 +681,19 @@
                 enemies: [],
                 missiles: [],
                 enemyBeams: [],
+                explosions: [],
+                messages: [],
+                stars: [],
                 player: {
                     x: canvas.width / 2 - 25,
                     y: canvas.height - 80,
                     width: 50,
                     height: 40
-                }
+                },
+                keys: {}
             };
             currentVocabIndex = 0;
+            initStars();
             document.getElementById('gameOver').style.display = 'none';
             updateUI();
             gameLoop();
@@ -427,6 +704,8 @@
             if (!gameState.gameRunning) return;
             
             const key = e.key;
+            gameState.keys[key] = true;
+            
             if (['1', '2', '3', '4'].includes(key)) {
                 const number = parseInt(key);
                 gameState.missiles.push(new Missile(
@@ -435,18 +714,14 @@
                     number
                 ));
             }
-            
-            // プレイヤー移動
-            const moveSpeed = 5;
-            if (key === 'ArrowLeft' && gameState.player.x > 0) {
-                gameState.player.x -= moveSpeed;
-            }
-            if (key === 'ArrowRight' && gameState.player.x < canvas.width - gameState.player.width) {
-                gameState.player.x += moveSpeed;
-            }
+        });
+        
+        document.addEventListener('keyup', (e) => {
+            gameState.keys[e.key] = false;
         });
         
         // ゲーム開始
+        initStars();
         updateUI();
         gameLoop();
     </script>
