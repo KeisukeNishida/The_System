@@ -1622,18 +1622,22 @@ function updateEnemyBeams() {
             ctx.restore();
         });
         }
-
+        // ボスHPバー
         function drawBossHPBar() {
         if (!gameState.boss) return;
+
         const max = 10;
         const ratio = Math.max(0, gameState.boss.life) / max;
+
         const barW = 200, barH = 12;
         const x = canvas.width / 2 - barW / 2;
         const y = 10;
 
+        // 枠（薄い黒背景＋白枠）
         ctx.fillStyle = 'rgba(0,0,0,0.5)';
         ctx.fillRect(x - 2, y - 2, barW + 4, barH + 4);
 
+        // 背景＆残量
         ctx.fillStyle = '#550000';
         ctx.fillRect(x, y, barW, barH);
         ctx.fillStyle = '#ff3333';
@@ -1642,11 +1646,23 @@ function updateEnemyBeams() {
         ctx.strokeStyle = '#ffffff';
         ctx.strokeRect(x - 2, y - 2, barW + 4, barH + 4);
 
+        // ← ここを変更：ラベルを右横＆縦中央に
+        const label = 'BOSS';
         ctx.font = 'bold 12px Arial';
-        ctx.textAlign = 'center';
+        ctx.textAlign = 'left';
+        ctx.textBaseline = 'middle';
+        const tx = x + barW + 8;      // バーの右端から8px右
+        const ty = y + barH / 2;      // バーの縦中央
+
+        // 縁取りで視認性UP（任意）
+        ctx.lineWidth = 3;
+        ctx.strokeStyle = 'rgba(0,0,0,0.5)';
+        ctx.strokeText(label, tx, ty);
+
         ctx.fillStyle = '#fff';
-        ctx.fillText('BOSS', canvas.width / 2, y + barH + 14);
+        ctx.fillText(label, tx, ty);
         }
+
 
         // （D）WARNINGオーバーレイ
         function drawWarningOverlay() {
