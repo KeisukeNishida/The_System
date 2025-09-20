@@ -364,6 +364,18 @@
         const canvas = document.getElementById('gameCanvas');
         const ctx = canvas.getContext('2d');
         
+        // ===== グローバル速度スケール =====
+        // 小さくするほど遅くなる（例: 0.6 = 60% の速さ）
+       // ===== グローバル調整値 =====
+        const SPEED_MULT = 0.6;   // 0.6 = 60%速度（移動・弾速）
+        const FIRE_RATE  = 0.6;   // 0.6 = 発射レート 60%（= 間隔は1/0.6倍）
+        const SPAWN_RATE = 0.7;   // 0.7 = 出現率 70%
+
+        // ===== デルタタイム（60fps基準） =====
+        let lastTime = performance.now();
+        let dt = 1; // 60fpsで1.0、120fpsで約0.5になるスケール
+
+
         // ゲーム状態
         let gameState = {
             life: 3,
@@ -617,10 +629,10 @@ class Enemy {
     // 先にサイズ・基本プロパティを確定させる
     this.width  = 56;
     this.height = 56;
-    this.speed  = 1 + Math.random();
+    this.speed  = (1 + Math.random()) * SPEED_MULT;
     this.vocab = getRandomVocab();
     this.lastBeamTime  = 0;
-    this.beamInterval  = 2000 + Math.random() * 2000;
+    this.beamInterval  = (2000 + Math.random() * 2000) / FIRE_RATE;
     this.phase = Math.random() * Math.PI * 2; // 個体差
     // その後に位置を決定
     this.x = this.findValidPosition();
@@ -674,7 +686,7 @@ update() {
     a.x < b.x + b.w && a.x + a.w > b.x && a.y < b.y + b.h && a.y + a.h > b.y;
 
   // ---- 落下（前方の敵カードに詰めすぎない）----
-  let nextY = this.y + this.speed;
+  let nextY = this.y + this.speed * dt;
   const nextRect = cardRectAt(this.x, nextY, this.width, this.height);
 
   if (Array.isArray(gameState.enemies)) {
@@ -706,13 +718,13 @@ update() {
       gameState.enemyBeams.push({
         x: this.x + this.width / 2 - 2,
         y: this.y + this.height,
-        width: 5, height: 15, speed: 3
+        width: 5, height: 15, speed: 3 * SPEED_MULT
       });
     }
     this.lastBeamTime = now;
     // 次の間隔を軽くランダム化（固定で良ければこの行は削除）
-    this.beamInterval = 1500 + Math.random() * 1500;
-  }
+    this.beamInterval = (1500 + Math.random() * 1500) / FIRE_RATE;
+}
 
   // 画面外で消滅
   return this.y < canvas.height + 100;
@@ -926,7 +938,7 @@ function drawWordCard(vocab, centerX, top, cardW = 160, cardH = 110) {
         this.height = 120;
         this.x = canvas.width / 2 - this.width / 2;
         this.y = 100;
-        this.speed = 4;
+        this.speed = 4 * SPEED_MULT;
         this.life = 10;
 
         // 移動関連
@@ -943,7 +955,7 @@ function drawWordCard(vocab, centerX, top, cardW = 160, cardH = 110) {
         this.attackDuration = 5000;
         this.restDuration   = 5000;
         this.cycleDuration  = this.attackDuration + this.restDuration;
-        this.shotInterval   = 100; // 100msで1発 → 5秒で50発
+        this.shotInterval   = 100 / FIRE_RATE; // 値が大きくなって発射がゆっくりに
         this.cycleStartTime = performance.now();
         this.isAttacking    = true;   // 生成直後は攻撃フェーズから
         this.prevAttacking  = true;
@@ -989,8 +1001,8 @@ function drawWordCard(vocab, centerX, top, cardW = 160, cardH = 110) {
         const d  = Math.hypot(dx, dy) || 1;
         const vx = (dx / d) * this.speed;
         const vy = (dy / d) * this.speed;
-        this.x += vx * (1 + Math.sin(now * 0.01 + this.phase) * 0.15);
-        this.y += vy * (1 + Math.cos(now * 0.012 + this.phase) * 0.15);
+        this.x += vx * (1 + Math.sin(now * 0.01  + this.phase) * 0.15) * dt;
+        this.y += vy * (1 + Math.cos(now * 0.012 + this.phase) * 0.15) * dt;
 
         // 画面内に収める
         this.x = Math.max(10, Math.min(this.x, canvas.width - this.width - 10));
@@ -1009,7 +1021,7 @@ function drawWordCard(vocab, centerX, top, cardW = 160, cardH = 110) {
 
         const spread = (Math.random() - 0.5) * 0.22;
         const angle  = Math.atan2(dy, dx) + spread;
-        const speed  = 12;
+        const speed  = 12 * SPEED_MULT;
 
         gameState.bossBeams.push({
         x: cx, y: cy,
@@ -1334,7 +1346,7 @@ function drawWordCard(vocab, centerX, top, cardW = 160, cardH = 110) {
         this.y = y;
         this.width = 22;   // 少し大きくして数字を見やすく
         this.height = 34;
-        this.speed = 9;
+        this.speed = 9 * SPEED_MULT;
         this.number = number;
 
         // 番号→色パレット
@@ -1349,7 +1361,7 @@ function drawWordCard(vocab, centerX, top, cardW = 160, cardH = 110) {
     }
 
     update() {
-        this.y -= this.speed;
+        this.y -= this.speed * dt;
         return this.y > -60;
     }
 
@@ -1650,7 +1662,7 @@ function drawWordCard(vocab, centerX, top, cardW = 160, cardH = 110) {
 function updateEnemyBeams() {
   // まず移動＆当たり判定＆生存フィルタ
   gameState.enemyBeams = gameState.enemyBeams.filter(beam => {
-    beam.y += beam.speed;
+    beam.y += beam.speed * dt;
 
     // プレイヤー衝突（AABB）
     if (beam.x < gameState.player.x + gameState.player.width &&
@@ -1740,7 +1752,7 @@ function updateEnemyBeams() {
     function updateBossBeams() {
         const p = gameState.player;
         gameState.bossBeams = gameState.bossBeams.filter(b => {
-            b.x += b.vx; b.y += b.vy;
+            b.x += b.vx * dt; b.y += b.vy * dt;
 
             // 円（ビーム）と矩形（プレイヤー）の簡易当たり
             const nearestX = Math.max(p.x, Math.min(b.x, p.x + p.width));
@@ -2049,18 +2061,18 @@ function updateEnemyBeams() {
     
     // プレイヤー更新（なめらかな移動）
     function updatePlayer() {
-        const moveSpeed = 18;
+        const moveSpeed = 12 * SPEED_MULT;
         if (gameState.keys['ArrowLeft'] && gameState.player.x > 0) {
-            gameState.player.x -= moveSpeed;
+            gameState.player.x -= moveSpeed * dt;;
         }
         if (gameState.keys['ArrowRight'] && gameState.player.x < canvas.width - gameState.player.width) {
-            gameState.player.x += moveSpeed;
+            gameState.player.x += moveSpeed * dt;
         }
         if (gameState.keys['ArrowUp'] && gameState.player.y > 0) {
-            gameState.player.y -= moveSpeed;
+            gameState.player.y -= moveSpeed * dt;;
         }
         if (gameState.keys['ArrowDown'] && gameState.player.y < canvas.height - gameState.player.height - 100) {
-            gameState.player.y += moveSpeed;
+            gameState.player.y += moveSpeed * dt;
         }
     }
     // ライフ表示
@@ -2084,7 +2096,7 @@ function updateEnemyBeams() {
     try {
         if (gameState.boss || gameState.bossWarningActive) return; // ← 追加ポイント
 
-        if (Math.random() < 0.015 && gameState.enemies.length < 4) {
+        if (Math.random() < 0.015 * SPAWN_RATE && gameState.enemies.length < 4) {
         const newEnemy = new Enemy();
         gameState.enemies.push(newEnemy);
         }
@@ -2094,92 +2106,68 @@ function updateEnemyBeams() {
     }
     
     // ゲームループ
-function gameLoop() {
-    try {
-        if (!gameState.gameRunning) return;
+    function gameLoop(now = performance.now()) {
+  try {
+    if (!gameState.gameRunning) return;
 
-        gameState.animationTime++;
+    // 60fps基準のdt（上限を3にして暴走防止）
+    dt = Math.min(3, (now - lastTime) / (1000 / 60));
+    lastTime = now;
 
-        if (gameState.life <= 0) { gameOver(); return; }
+    gameState.animationTime += dt;
+    if (gameState.life <= 0) { gameOver(); return; }
 
-        ctx.clearRect(0, 0, canvas.width, canvas.height);
-        drawStars();
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    drawStars();
 
-        // 通常敵の生成・更新・描画
-        spawnEnemy();
-        gameState.enemies = gameState.enemies.filter(enemy => {
-            if (enemy && enemy.draw && enemy.update) {
-                enemy.draw();
-                return enemy.update();
-            }
-            return false;
-        });
+    // 敵（生成は時間依存に・後述の spawnEnemy を修正）
+    spawnEnemy();
+    gameState.enemies = gameState.enemies.filter(enemy => {
+      if (enemy && enemy.draw && enemy.update) {
+        enemy.draw();
+        return enemy.update(); // ← 各update内でdtを使うよう修正済み
+      }
+      return false;
+    });
 
-        // ★ スコア到達でボス出現
-        spawnBossIfReady();
-            // ★ ボス更新・描画（フィナーレ中は描かない）
-            if (gameState.boss && !gameState.bossFinaleActive) {
-            const now = performance.now();
-            gameState.boss.update(now);
-            gameState.boss.draw();
-        }
-
-        // ミサイル更新・描画
-        gameState.missiles = gameState.missiles.filter(missile => {
-            if (missile && missile.draw && missile.update) {
-                missile.draw();
-                return missile.update();
-            }
-            return false;
-        });
-
-        // 通常敵ビーム
-        updateEnemyBeams();
-
-        // ★ ボスのビーム
-        updateBossBeams();
-
-        // 衝突
-        checkCollisions();
-        checkPlayerEnemyCollisions();
-
-        // 爆発
-        gameState.explosions = gameState.explosions.filter(ex => {
-            if (ex && ex.draw && ex.update) { ex.draw(); return ex.update(); }
-            return false;
-        });
-        gameState.explosions = gameState.explosions.filter(ex => {
-        if (ex && ex.draw && ex.update) { ex.draw(); return ex.update(); }
-        return false;
-        });
-
-        // ★ 3秒大爆発の演出
-        updateAndDrawBossFinale();
-
-        // メッセージ
-        gameState.messages = gameState.messages.filter(msg => {
-            if (msg && msg.draw && msg.update) { msg.draw(); return msg.update(); }
-            return false;
-        });
-
-        // プレイヤー
-        updatePlayer();
-        drawPlayer();
-
-        // ★ ボスHPバー（最後にUIとして）
-        drawBossHPBar();
-
-        // ★ WARNINGオーバーレイ（最前面に出したいので一番最後に描く）
-        drawWarningOverlay();
-
-        requestAnimationFrame(gameLoop);
-    } catch (error) {
-        console.error('ゲームループエラー詳細:', error.message);
-        console.error('スタックトレース:', error.stack);
-        console.error('gameState:', gameState);
-        gameState.gameRunning = false;
+    // ボス
+    spawnBossIfReady();
+    if (gameState.boss && !gameState.bossFinaleActive) {
+      const nowPerf = performance.now();
+      gameState.boss.update(nowPerf); // ← update内でdtを掛ける
+      gameState.boss.draw();
     }
+
+    // ミサイル
+    gameState.missiles = gameState.missiles.filter(m => {
+      if (m && m.draw && m.update) { m.draw(); return m.update(); }
+      return false;
+    });
+
+    updateEnemyBeams(); // ← 中でdtを掛ける
+    updateBossBeams();  // ← 中でdtを掛ける
+    checkCollisions();
+    checkPlayerEnemyCollisions();
+
+    // 爆発・メッセージ
+    gameState.explosions = gameState.explosions.filter(ex => ex && ex.draw && ex.update && (ex.draw(), ex.update()));
+    updateAndDrawBossFinale();
+    gameState.messages   = gameState.messages.filter(msg => msg && msg.draw && msg.update && (msg.draw(), msg.update()));
+
+    // プレイヤー
+    updatePlayer(); // ← 中でdtを掛ける
+    drawPlayer();
+
+    drawBossHPBar();
+    drawWarningOverlay();
+
+    requestAnimationFrame(gameLoop);
+  } catch (e) {
+    console.error(e);
+    gameState.gameRunning = false;
+  }
 }
+
 
 
     
