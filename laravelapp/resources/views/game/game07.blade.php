@@ -1275,7 +1275,7 @@ function drawWordCard(vocab, centerX, top, cardW = 160, cardH = 110) {
         update() {
             this.life--;
             // メッセージが上に浮上
-            this.y = this.startY - (this.maxLife - this.life) * 2;
+            this.y = this.startY - (this.maxLife - this.life) * 0.6;
             return this.life > 0;
         }
         
