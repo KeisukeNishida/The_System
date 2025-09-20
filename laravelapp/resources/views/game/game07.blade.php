@@ -49,7 +49,6 @@
         .score-display { color: #44ff44; margin-top: 5px; }
 
         .instructions {
-        position: absolute;
         bottom: 80px;
         left: 50%;
         transform: translateX(-50%);
@@ -60,14 +59,6 @@
         z-index: 15;
         }
 
-        /* 1〜4ボタンは最前面寄りに */
-        .touch-controls{
-        position: absolute;
-        bottom: 10px; left: 0; right: 0;
-        display: flex; justify-content: space-around;
-        padding: 0 20px;
-        z-index: 30;
-        }
         .answer-btn{
         background: rgba(255,255,255,0.2);
         color: #fff;
@@ -177,42 +168,197 @@
         z-index: 12;
         text-shadow: 0 1px 2px rgba(0,0,0,.35);
         }
+        /* 左側：1〜4（小さめ・2x2） */
+        .touch-controls-left{
+        position:absolute;
+        left:12px;
+        bottom:calc(env(safe-area-inset-bottom, 0px) + 12px);
+        display:grid;
+        grid-template-columns: repeat(2, 44px);
+        grid-auto-rows:44px;
+        gap:10px;
+        z-index:30;
+        touch-action:none;
+        user-select:none;
+        }
+        .touch-controls-left .answer-btn{
+        width:44px; height:44px;
+        border-radius:50%;
+        background:rgba(255,255,255,0.18);
+        border:2px solid #fff;
+        color:#fff; font-weight:700; font-size:18px;
+        display:flex; align-items:center; justify-content:center;
+        backdrop-filter: blur(2px);
+        }
+        .touch-controls-left .answer-btn:active{ transform:scale(0.95); }
+
+        /* 右側：D-Pad（3x3の配置） */
+        .touch-controls-right.dpad{
+        position:absolute;
+        right:12px;
+        bottom:calc(env(safe-area-inset-bottom, 0px) + 12px);
+        display:grid;
+        grid-template-areas:
+            ".    up    ."
+            "left  .  right"
+            ".   down   .";
+        grid-template-columns: 48px 48px 48px;
+        grid-template-rows:    48px 48px 48px;
+        gap:10px;
+        z-index:30;
+        touch-action:none;
+        user-select:none;
+        }
+        .arrow-btn{
+        width:48px; height:48px;
+        border-radius:50%;
+        background:rgba(255,255,255,0.18);
+        border:2px solid #fff;
+        color:#fff; font-size:20px; font-weight:700;
+        display:flex; align-items:center; justify-content:center;
+        backdrop-filter: blur(2px);
+        }
+        .arrow-btn[data-active="1"]{ background:rgba(255,255,255,0.35); }
+
+        .btn-up   { grid-area: up; }
+        .btn-down { grid-area: down; }
+        .btn-left { grid-area: left; }
+        .btn-right{ grid-area: right; }
+
+        /* PC等では消したい場合（任意） */
+        @media (hover:hover) and (min-width: 768px){
+        .touch-controls-left, .touch-controls-right{ display:none; }
+        }
+        /* ▼ まとめて下部に配置するコンテナ */
+        .hud-bottom{
+        position:absolute;
+        left:50%;
+        bottom:calc(env(safe-area-inset-bottom,0px) + 10px);
+        transform:translateX(-50%);
+        width:min(92%, 380px);
+        z-index:30;
+        display:flex;
+        flex-direction:column;
+        align-items:center;
+        gap:8px;            /* 説明とボタンの間隔 */
+        }
+
+        /* 旧 .instructions の absolute を打ち消し */
+        .hud-bottom .instructions{
+        position:static !important;
+        left:auto !important;
+        bottom:auto !important;
+        transform:none !important;
+        width:100%;
+        margin:0;
+        font-size:12px;
+        color:#aaa;
+        text-align:center;
+        }
+
+        /* 説明の下に左右で並べる行 */
+        .controls-row{
+        width:100%;
+        display:flex;
+        align-items:center;
+        justify-content:space-between;
+        }
+
+        /* 1,2,3,4 は1行 */
+        .answers-inline{
+        display:flex;
+        gap:8px;           /* ボタン間隔（必要なら調整） */
+        }
+        .answers-inline .answer-btn{
+        width:44px; height:44px;
+        border-radius:50%;
+        background:rgba(255,255,255,0.18);
+        border:2px solid #fff;
+        color:#fff; font-weight:700; font-size:18px;
+        display:flex; align-items:center; justify-content:center;
+        }
+        .answers-inline .answer-btn:active{
+        transform:scale(0.95);
+        background:rgba(255,255,255,0.35);
+        }
+
+        /* 矢印（D-Pad）— 間隔を小さく */
+        .dpad{
+        display:grid;
+        grid-template-areas:
+            ". up ."
+            "left . right"
+            ". down .";
+        grid-template-columns: 40px 40px 40px;
+        grid-template-rows:    40px 40px 40px;
+        gap:6px;               /* ← 間隔小さめ */
+        }
+        .arrow-btn{
+        width:40px; height:40px;
+        border-radius:50%;
+        background:rgba(255,255,255,0.18);
+        border:2px solid #fff;
+        color:#fff; font-size:18px; font-weight:700;
+        display:flex; align-items:center; justify-content:center;
+        }
+        .arrow-btn[data-active="1"]{ background:rgba(255,255,255,0.35); }
+        .btn-up   { grid-area: up; }
+        .btn-down { grid-area: down; }
+        .btn-left { grid-area: left; }
+        .btn-right{ grid-area: right; }
+        .hud-bottom{ z-index:30; }
+        .answers-inline .answer-btn{ touch-action: manipulation; }
+
 
     </style>
 </head>
 <body>
-    <div class="game-container">
-    <div class="game-ui">
-    <div class="life-display" id="lifeDisplay" aria-label="ライフ"></div>
-    <div class="score-display">⭐ Score: <span id="scoreCount">0</span></div>
-    </div>
-
-    <div class="instructions">
-        下のボタンまたは数字キー1-4で正しい答えを選んで攻撃！
-    </div>
-
-    <div class="game-over" id="gameOver">
-        <h2>ゲームオーバー</h2>
-        <p>最終スコア: <span id="finalScore">0</span></p>
-        <button class="restart-btn" onclick="restartGame()">リスタート</button>
-    </div>
-
+  <div class="game-container">
+    <!-- キャンバスは一番下に敷く -->
     <canvas id="gameCanvas" width="400" height="800"></canvas>
-    <!-- クリア固定メッセージ（画面上部に常時固定表示） -->
-    <!-- ★ クリア用の固定ボード -->
-    <div id="gameClearBoard" class="game-clear-board" aria-live="polite" aria-hidden="true">
-    <h2>🎉 おめでとう！！ゲームクリアです！！</h2>
-    <p>最終スコア: <span id="finalScoreClear">0</span></p>
-    <button class="restart-btn" onclick="restartGame()">リスタート</button>
-    </div>
-    <div class="touch-controls">
-        <div class="answer-btn" data-answer="1">1</div>
-        <div class="answer-btn" data-answer="2">2</div>
-        <div class="answer-btn" data-answer="3">3</div>
-        <div class="answer-btn" data-answer="4">4</div>
-    </div>
+
+    <!-- スコア/ライフ -->
+    <div class="game-ui">
+      <div class="life-display" id="lifeDisplay" aria-label="ライフ"></div>
+      <div class="score-display">⭐ Score: <span id="scoreCount">0</span></div>
     </div>
 
+    <!-- 下部HUD：説明 + 1〜4 + D-Pad -->
+    <div class="hud-bottom">
+      <div class="instructions">数字キー1-4で正しい答えを選んで攻撃！</div>
+      <div class="controls-row">
+        <!-- 左：1,2,3,4（1行） -->
+        <div class="answers-inline" id="answerControls" aria-label="攻撃ボタン">
+          <button class="answer-btn" data-answer="1" type="button">1</button>
+          <button class="answer-btn" data-answer="2" type="button">2</button>
+          <button class="answer-btn" data-answer="3" type="button">3</button>
+          <button class="answer-btn" data-answer="4" type="button">4</button>
+        </div>
+        <!-- 右：矢印（間隔小さめ） -->
+        <div class="dpad" id="moveControls" aria-label="方向パッド">
+          <button class="arrow-btn btn-up"    data-key="ArrowUp">↑</button>
+          <button class="arrow-btn btn-left"  data-key="ArrowLeft">←</button>
+          <button class="arrow-btn btn-right" data-key="ArrowRight">→</button>
+          <button class="arrow-btn btn-down"  data-key="ArrowDown">↓</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- ゲームオーバー -->
+    <div class="game-over" id="gameOver">
+      <h2>ゲームオーバー</h2>
+      <p>最終スコア: <span id="finalScore">0</span></p>
+      <button class="restart-btn" onclick="restartGame()">リスタート</button>
+    </div>
+
+    <!-- クリア固定ボード -->
+    <div id="gameClearBoard" class="game-clear-board" aria-live="polite" aria-hidden="true">
+      <h2>🎉 おめでとう！！ゲームクリアです！！</h2>
+      <p>最終スコア: <span id="finalScoreClear">0</span></p>
+      <button class="restart-btn" onclick="restartGame()">リスタート</button>
+    </div>
+  </div>
+</body>
 
     <script>
         const canvas = document.getElementById('gameCanvas');
@@ -297,7 +443,7 @@
         { word: "mouth",      options: ["は", "くち", "かお", "て"],                 correct: 2 },
         { word: "face",       options: ["かお", "くつ", "ぼうし", "かさ"],           correct: 1 },
         { word: "book",       options: ["うた", "ほん", "え", "おやつ"],             correct: 2 },
-        { word: "pencil",     options: ["えんぴつ", "じ", "え", "ほん"],             correct: 1 },
+        { word: "pencil",     options: ["えんぴつ", "いす", "え", "ほん"],             correct: 1 },
         { word: "picture",    options: ["うた", "あそび", "え", "おにぎり"],         correct: 3 },
         { word: "song",       options: ["うた", "え", "ほん", "やさい"],             correct: 1 },
         { word: "rain",       options: ["くも", "ゆき", "かぜ", "あめ"],             correct: 4 },
@@ -339,7 +485,8 @@
         "ねる":   "🛌",
         "たべる": "🍽️",
         "のむ":   "🥤",
-        "やさい":"🥦"
+        "やさい":"🥦",
+        "いす":"🪑"
         };
         let currentVocabIndex = 0;
 
@@ -2093,52 +2240,91 @@ function gameLoop() {
         }
 
     
-    // キーボード入力
+    // === キーボード入力（PC）===
+    // 矢印キーは押下中 true、離したら false。既定動作は止める。
+    const ARROWS = ['ArrowUp','ArrowDown','ArrowLeft','ArrowRight'];
+
     document.addEventListener('keydown', (e) => {
-        if (!gameState.gameRunning) return;
-        
-        const key = e.key;
-        gameState.keys[key] = true;
-        
-        if (['1', '2', '3', '4'].includes(key)) {
-            const number = parseInt(key);
-            gameState.missiles.push(new Missile(
-                gameState.player.x + gameState.player.width / 2 - 10,
-                gameState.player.y - 30,
-                number
-            ));
-        }
+    if (!gameState.gameRunning) return;
+
+    const k = e.key;
+
+    // 矢印：移動フラグON＋既定動作を止める（スクロール／フォーカス移動防止）
+    if (ARROWS.includes(k)) {
+        e.preventDefault();
+        gameState.keys[k] = true;
+    }
+
+    // 数字1〜4：発射
+    if (k === '1' || k === '2' || k === '3' || k === '4') {
+        e.preventDefault(); // IMEやフォーカス移動の悪影響を避ける
+        const n = parseInt(k, 10);
+        gameState.missiles.push(new Missile(
+        gameState.player.x + gameState.player.width / 2 - 10,
+        gameState.player.y - 30,
+        n
+        ));
+    }
     });
+
+    // 離したらフラグOFF（document でも window でもOK。安全のため window）
+    window.addEventListener('keyup', (e) => {
+    const k = e.key;
+    if (ARROWS.includes(k)) {
+        e.preventDefault();
+        gameState.keys[k] = false;
+    }
+    });
+
+    // タブ外へフォーカスが移った時に押下状態をクリア（キー張り付き防止）
+    window.addEventListener('blur', () => {
+    ARROWS.forEach(k => gameState.keys[k] = false);
+    });
+
     
-    document.addEventListener('keyup', (e) => {
-        gameState.keys[e.key] = false;
+
+    // === 2) 方向パッド（右）: 押下中は keys をON、離したらOFF ===
+    document.querySelectorAll('#moveControls .arrow-btn').forEach(btn => {
+        const key = btn.dataset.key;
+        const set = (v) => {
+        gameState.keys[key] = v;
+        btn.dataset.active = v ? '1' : '0';
+        };
+
+        // タッチ（スマホ）
+        btn.addEventListener('touchstart', (e) => { e.preventDefault(); set(true); }, { passive: false });
+        btn.addEventListener('touchend',   (e) => { e.preventDefault(); set(false); }, { passive: false });
+        btn.addEventListener('touchcancel',(e) => { e.preventDefault(); set(false); }, { passive: false });
+
+        // マウス（PCでも試せるように）
+        btn.addEventListener('mousedown', () => set(true));
+        window.addEventListener('mouseup', () => set(false));
     });
-    
-    // タッチコントロール
-    document.querySelectorAll('.answer-btn').forEach(btn => {
-        btn.addEventListener('click', (e) => {
-            if (!gameState.gameRunning) return;
-            
-            const number = parseInt(btn.dataset.answer);
-            gameState.missiles.push(new Missile(
-                gameState.player.x + gameState.player.width / 2 - 10,
-                gameState.player.y - 30,
-                number
-            ));
-        });
-        
-        btn.addEventListener('touchstart', (e) => {
-            e.preventDefault();
-            if (!gameState.gameRunning) return;
-            
-            const number = parseInt(btn.dataset.answer);
-            gameState.missiles.push(new Missile(
-                gameState.player.x + gameState.player.width / 2 - 10,
-                gameState.player.y - 30,
-                number
-            ));
-        });
-    });
+    // === 1〜4ボタン：ミサイル発射（CLICK + TOUCH）===
+const answerButtons = document.querySelectorAll(
+  '.answers-inline .answer-btn, .touch-controls-left .answer-btn, .answer-btn'
+);
+
+function fireFromButton(num){
+  if (!gameState.gameRunning) return;
+  gameState.missiles.push(new Missile(
+    gameState.player.x + gameState.player.width / 2 - 10,
+    gameState.player.y - 30,
+    num
+  ));
+}
+
+answerButtons.forEach(btn => {
+  const n = parseInt(btn.dataset.answer, 10);
+  // クリック
+  btn.addEventListener('click', () => fireFromButton(n));
+  // タッチ（300ms遅延防止・ダブル発火防止）
+  btn.addEventListener('touchstart', (e) => {
+    e.preventDefault();
+    fireFromButton(n);
+  }, { passive: false });
+});
+
         
     // ゲーム開始
     initStars();
