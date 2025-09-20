@@ -5,149 +5,207 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>English Learning Shooting Game</title>
     <style>
+       /* ===== Base ===== */
         body {
-            margin: 0;
-            padding: 0;
-            background: #000;
-            color: white;
-            font-family: 'Arial', sans-serif;
-            overflow: hidden;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            min-height: 100vh;
+        margin: 0;
+        padding: 0;
+        background: #000;
+        color: #fff;
+        font-family: 'Arial', sans-serif;
+        overflow: hidden;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        min-height: 100vh;
         }
-        
-        .game-container {
-            position: relative;
-            width: 100%;
-            max-width: 400px;
-            height: 100vh;
-            max-height: 800px;
+
+        /* キャンバスの入れ物（サイズ固定） */
+        .game-container{
+        position: relative;
+        width: 400px;
+        height: 800px;
         }
-        
-        #gameCanvas {
-            display: block;
-            width: 100%;
-            height: 100%;
-            background: linear-gradient(180deg, #001133 0%, #003366 100%);
-            border: none;
-            touch-action: none;
+
+        /* キャンバスは全面に敷く */
+        #gameCanvas{
+        position: absolute;
+        inset: 0;
+        width: 100%;
+        height: 100%;
+        background: linear-gradient(180deg, #001133 0%, #003366 100%);
+        border: none;
+        touch-action: none;
         }
-        
+
+        /* ===== UI ===== */
         .game-ui {
-            position: absolute;
-            top: 10px;
-            left: 10px;
-            font-size: 18px;
-            z-index: 10;
+        position: absolute;
+        top: 10px;
+        left: 10px;
+        font-size: 18px;
+        z-index: 10;
         }
-        
-        .life-display {
-            color: #ff4444;
-        }
-        
-        .score-display {
-            color: #44ff44;
-            margin-top: 5px;
-        }
-        
+        .life-display { color: #ff4444; }
+        .score-display { color: #44ff44; margin-top: 5px; }
+
         .instructions {
-            position: absolute;
-            bottom: 80px;
-            left: 50%;
-            transform: translateX(-50%);
-            font-size: 12px;
-            color: #aaa;
-            text-align: center;
-            width: 90%;
+        position: absolute;
+        bottom: 80px;
+        left: 50%;
+        transform: translateX(-50%);
+        font-size: 12px;
+        color: #aaa;
+        text-align: center;
+        width: 90%;
+        z-index: 15;
         }
-        
-        .touch-controls {
-            position: absolute;
-            bottom: 10px;
-            left: 0;
-            right: 0;
-            display: flex;
-            justify-content: space-around;
-            padding: 0 20px;
+
+        /* 1〜4ボタンは最前面寄りに */
+        .touch-controls{
+        position: absolute;
+        bottom: 10px; left: 0; right: 0;
+        display: flex; justify-content: space-around;
+        padding: 0 20px;
+        z-index: 30;
         }
-        
-        .answer-btn {
-            background: rgba(255, 255, 255, 0.2);
-            color: white;
-            border: 2px solid #fff;
-            border-radius: 50%;
-            width: 60px;
-            height: 60px;
-            font-size: 24px;
-            font-weight: bold;
-            cursor: pointer;
-            user-select: none;
-            display: flex;
-            align-items: center;
-            justify-content: center;
+        .answer-btn{
+        background: rgba(255,255,255,0.2);
+        color: #fff;
+        border: 2px solid #fff;
+        border-radius: 50%;
+        width: 60px; height: 60px;
+        font-size: 24px; font-weight: bold;
+        cursor: pointer; user-select: none;
+        display: flex; align-items: center; justify-content: center;
         }
-        
-        .answer-btn:active {
-            background: rgba(255, 255, 255, 0.4);
-            transform: scale(0.95);
+        .answer-btn:active{
+        background: rgba(255,255,255,0.4);
+        transform: scale(0.95);
         }
-        
-        .game-over {
-            position: absolute;
-            top: 50%;
-            left: 50%;
-            transform: translate(-50%, -50%);
-            text-align: center;
-            background: rgba(0,0,0,0.8);
-            padding: 20px;
-            border-radius: 10px;
-            display: none;
+
+        /* ゲームオーバーはオーバーレイ */
+        .game-over{
+        position: absolute;
+        top: 50%; left: 50%;
+        transform: translate(-50%, -50%);
+        text-align: center;
+        background: rgba(0,0,0,0.8);
+        padding: 20px;
+        border-radius: 10px;
+        display: none;
+        z-index: 60;
         }
-        
-        .restart-btn {
-            background: #4444ff;
-            color: white;
-            border: none;
-            padding: 10px 20px;
-            margin-top: 10px;
-            border-radius: 5px;
-            cursor: pointer;
-            font-size: 16px;
+        .restart-btn{
+        background: #4444ff;
+        color: #fff;
+        border: none;
+        padding: 10px 20px;
+        margin-top: 10px;
+        border-radius: 5px;
+        cursor: pointer;
+        font-size: 16px;
         }
-        
-        .restart-btn:hover {
-            background: #6666ff;
+        .restart-btn:hover{ background: #6666ff; }
+
+        /* ===== クリア固定メッセージ（モーダルの代わり） ===== */
+        .game-clear-banner{
+        position: absolute;
+        top: 56px;               /* ライフ/スコアの下あたり */
+        left: 50%;
+        transform: translateX(-50%);
+        z-index: 40;
+        font-size: 22px;
+        font-weight: 900;
+        letter-spacing: .5px;
+        color: #fff;             /* 明るい文字色 */
+        text-shadow:
+            0 0 6px #fff,
+            0 0 16px #fffa90,
+            0 0 28px #ffb300;      /* ふわっと光る */
+        padding: 4px 10px;
+        border-radius: 10px;
+        pointer-events: none;    /* タップ操作を邪魔しない */
+        display: none;           /* クリア時に表示 */
+        }
+        .game-clear-banner .small{
+        font-size: 14px;
+        font-weight: 700;
+        opacity: .9;
+        }
+        /* クリア用ボード（固定表示・明るい文字） */
+        .game-clear-board{
+        position: absolute;
+        left: 50%;
+        top: 64px;                 /* ライフ/スコアの下あたりに固定 */
+        transform: translateX(-50%);
+        width: min(92%, 360px);
+        padding: 16px 18px 18px;
+        border-radius: 14px;
+        background: rgba(18,18,22,0.92);             /* しっかり暗い下地で背景に負けない */
+        color: #fff;                                  /* 明るい文字色 */
+        border: 1px solid rgba(255,255,255,0.18);
+        box-shadow: 0 10px 30px rgba(0,0,0,.55), inset 0 0 32px rgba(255,255,255,.06);
+        backdrop-filter: blur(6px);
+        -webkit-backdrop-filter: blur(6px);
+        text-align: center;
+        z-index: 50;                                  /* キャンバスやボタンより前面 */
+        display: none;                                /* クリア時に表示 */
+        pointer-events: auto;
+        }
+        .game-clear-board h2{
+        margin: 0 0 8px;
+        font-size: 20px;
+        font-weight: 900;
+        letter-spacing: .4px;
+        color: #fff;
+        text-shadow: 0 0 6px #fff, 0 0 16px #ffe27a;  /* ほんのり発光 */
+        }
+        .game-clear-board p{
+        margin: 0 0 12px;
+        font-size: 16px;
+        color: #fffbcc;
+        }
+        .game-clear-board .restart-btn{
+        width: 100%;
+        min-height: 44px;
+        font-size: 16px;
+        border-radius: 10px;
         }
     </style>
 </head>
 <body>
     <div class="game-container">
-        <div class="game-ui">
-            <div class="life-display">❤️ Life: <span id="lifeCount">3</span></div>
-            <div class="score-display">⭐ Score: <span id="scoreCount">0</span></div>
-        </div>
-        
-        <div class="instructions">
-            下のボタンまたは数字キー1-4で正しい答えを選んで攻撃！
-        </div>
-        
-        <div class="game-over" id="gameOver">
-            <h2>ゲームオーバー</h2>
-            <p>最終スコア: <span id="finalScore">0</span></p>
-            <button class="restart-btn" onclick="restartGame()">リスタート</button>
-        </div>
-        
-        <canvas id="gameCanvas" width="400" height="800"></canvas>
-        
-        <div class="touch-controls">
-            <div class="answer-btn" data-answer="1">1</div>
-            <div class="answer-btn" data-answer="2">2</div>
-            <div class="answer-btn" data-answer="3">3</div>
-            <div class="answer-btn" data-answer="4">4</div>
-        </div>
+    <div class="game-ui">
+        <div class="life-display">❤️ Life: <span id="lifeCount">3</span></div>
+        <div class="score-display">⭐ Score: <span id="scoreCount">0</span></div>
     </div>
+
+    <div class="instructions">
+        下のボタンまたは数字キー1-4で正しい答えを選んで攻撃！
+    </div>
+
+    <div class="game-over" id="gameOver">
+        <h2>ゲームオーバー</h2>
+        <p>最終スコア: <span id="finalScore">0</span></p>
+        <button class="restart-btn" onclick="restartGame()">リスタート</button>
+    </div>
+
+    <canvas id="gameCanvas" width="400" height="800"></canvas>
+    <!-- クリア固定メッセージ（画面上部に常時固定表示） -->
+    <!-- ★ クリア用の固定ボード -->
+    <div id="gameClearBoard" class="game-clear-board" aria-live="polite" aria-hidden="true">
+    <h2>🎉 おめでとう！！ゲームクリアです！！</h2>
+    <p>最終スコア: <span id="finalScoreClear">0</span></p>
+    <button class="restart-btn" onclick="restartGame()">リスタート</button>
+    </div>
+    <div class="touch-controls">
+        <div class="answer-btn" data-answer="1">1</div>
+        <div class="answer-btn" data-answer="2">2</div>
+        <div class="answer-btn" data-answer="3">3</div>
+        <div class="answer-btn" data-answer="4">4</div>
+    </div>
+    </div>
+
 
     <script>
         const canvas = document.getElementById('gameCanvas');
@@ -177,7 +235,12 @@
             bossWarningActive: false,
             bossWarningStart: 0,
             bossPending: false,          // 警告後にボスを出す予約フラグ
-            bossTriggerScore: 100        // 出現スコア（必要なら変更可）
+            bossTriggerScore: 100,        // 出現スコア（必要なら変更可）
+            bossCleared: false,
+            bossCleared: false,
+            bossFinaleActive: false,
+            bossFinaleStart: 0,
+            bossFinalePos: {x:0,y:0},
 
             };
         
@@ -268,7 +331,8 @@
         "とぶ":   "🕊️",
         "ねる":   "🛌",
         "たべる": "🍽️",
-        "のむ":   "🥤"
+        "のむ":   "🥤",
+        "やさい":"🥦"
         };
         let currentVocabIndex = 0;
 
@@ -306,7 +370,7 @@
             { word:"peach",    options:["めろん🍈","りんご🍎","ばなな🍌","もも🍑"],                   correct:4 },
             { word:"melon",    options:["いちご🍓","めろん🍈","ぶどう🍇","みかん🍊"],                 correct:2 },
             { word:"carrot",   options:["じゃがいも🥔","にんじん🥕","たまねぎ🧅","とまと🍅"],         correct:2 },
-            { word:"potato",   options:["じゃがいも🥔","にんじん🥕","さつまいも🍠","きゃべつ🥬"],     correct:1 },
+            { word:"potato",   options:["じゃがいも🥔","にんじん🥕","なすび🍆","きゃべつ🥬"],     correct:1 },
             { word:"tomato",   options:["とまと🍅","きゅうり🥒","なす🍆","とうもろこし🌽"],           correct:1 },
             { word:"cherry",   options:["さくらんぼ🍒","ぶどう🍇","もも🍑","りんご🍎"],               correct:1 },
             { word:"rice",     options:["ぱん🍞","めん🍜","ぷりん🍮","ごはん🍚"],                     correct:4 },
@@ -1400,6 +1464,8 @@ function drawWordCard(vocab, centerX, top, cardW = 160, cardH = 110) {
     function spawnBossIfReady() {
     const now = performance.now();
 
+    // クリア済み or フィナーレ中は何もしない（WARNINGも出さない）
+    if (gameState.bossCleared || gameState.bossFinaleActive) return;
     // 条件到達＆未処理なら警告を開始
     if (!gameState.boss && !gameState.bossWarningActive && !gameState.bossPending &&
         gameState.score >= gameState.bossTriggerScore) {
@@ -1577,7 +1643,7 @@ function updateEnemyBeams() {
 
         // （D）WARNINGオーバーレイ
         function drawWarningOverlay() {
-        if (!gameState.bossWarningActive) return;
+        if (!gameState.bossWarningActive || gameState.bossFinaleActive || gameState.bossCleared) return;
 
         const t = performance.now() / 1000;
         const blink = (Math.sin(t * 6) + 1) / 2; // 点滅
@@ -1642,41 +1708,127 @@ function updateEnemyBeams() {
 
         // 2) ボス
         if (gameState.boss) {
-            const b = gameState.boss;
-            if (missile.x < b.x + b.width &&
-                missile.x + missile.width > b.x &&
-                missile.y < b.y + b.height &&
-                missile.y + missile.height > b.y) {
+        const b = gameState.boss;
+        if (missile.x < b.x + b.width &&
+            missile.x + missile.width > b.x &&
+            missile.y < b.y + b.height &&
+            missile.y + missile.height > b.y) {
 
             gameState.explosions.push(new Explosion(missile.x + missile.width/2, missile.y));
 
             if (missile.number === b.vocab.correct) {
-                b.life--;
-                gameState.score += 200;
-                gameState.messages.push(new FloatingMessage(b.x + b.width/2, b.y - 10, "OK", "#00aaff"));
-                b.nextWord();
+            b.life--;
+            gameState.score += 200;
+            gameState.messages.push(new FloatingMessage(b.x + b.width/2, b.y - 10, "OK", "#00aaff"));
 
-                if (b.life <= 0) {
-                gameState.messages.push(new FloatingMessage(canvas.width/2, 120, "BOSS DOWN!", "#ffdd00"));
-                gameState.boss = null;
-                gameState.bossBeams.length = 0;
-                }
+            if (b.life <= 0) {
+            startBossFinale(b);              // ← 3秒大爆発へ
             } else {
-                // ミスはプレイヤーにダメージ
-                gameState.life--;
-                gameState.messages.push(new FloatingMessage(b.x + b.width/2, b.y - 10, "MISS", "#ff0000"));
+            b.nextWord();
+            }
+            } else {
+            // ミスはプレイヤーにダメージ
+            gameState.life--;
+            gameState.messages.push(new FloatingMessage(b.x + b.width/2, b.y - 10, "MISS", "#ff0000"));
             }
 
             gameState.missiles.splice(m, 1);
             updateUI();
             continue;
-            }
+        }
         }
         }
     } catch (err) {
         console.error('衝突判定エラー:', err.message);
     }
     }
+
+    // ボス大爆発開始
+    function startBossFinale(boss) {
+    const cx = boss.x + boss.width / 2;
+    const cy = boss.y + boss.height / 2;
+
+    gameState.bossFinaleActive = true;
+    gameState.bossFinaleStart  = performance.now();
+    gameState.bossFinalePos    = { x: cx, y: cy };
+
+    // ボスは退場、弾も止める
+    gameState.boss = null;
+    gameState.bossBeams.length = 0;
+    // WARNING 系は完全リセット
+    gameState.bossWarningActive = false;
+    gameState.bossPending = false;
+
+    // 初期の爆発を数発
+    for (let i = 0; i < 20; i++) {
+        const ang = Math.random() * Math.PI * 2;
+        const r   = 10 + Math.random() * 40;
+        gameState.explosions.push(new Explosion(cx + Math.cos(ang)*r, cy + Math.sin(ang)*r));
+    }
+    }
+    // ボス大爆発更新・描画
+    function updateAndDrawBossFinale() {
+    if (!gameState.bossFinaleActive) return;
+
+    const now     = performance.now();
+    const elapsed = now - gameState.bossFinaleStart;
+    const dur     = 3000; // 3秒
+    const { x, y } = gameState.bossFinalePos;
+
+    // 継続的に爆発パーティクルを追加
+    const burstsPerFrame = 4;
+    for (let i = 0; i < burstsPerFrame; i++) {
+        const ang = Math.random() * Math.PI * 2;
+        const radius = 20 + Math.random() * (160 * Math.min(1, elapsed / dur));
+        gameState.explosions.push(new Explosion(x + Math.cos(ang)*radius, y + Math.sin(ang)*radius));
+    }
+
+    // 中心の巨大な発光
+    const coreR = 40 + 160 * Math.min(1, elapsed / dur);
+    ctx.save();
+    ctx.globalCompositeOperation = 'lighter';
+    const g = ctx.createRadialGradient(x, y, 0, x, y, coreR);
+    g.addColorStop(0.0, 'rgba(255,255,255,0.95)');
+    g.addColorStop(0.3, 'rgba(255,210,80,0.9)');
+    g.addColorStop(0.6, 'rgba(255,90,0,0.75)');
+    g.addColorStop(1.0, 'rgba(0,0,0,0)');
+    ctx.fillStyle = g;
+    ctx.beginPath();
+    ctx.arc(x, y, coreR, 0, Math.PI * 2);
+    ctx.fill();
+
+    // 画面フラッシュ
+    const flash = Math.max(0, 1 - elapsed / dur);
+    ctx.fillStyle = `rgba(255,255,255,${0.25 * flash})`;
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+    ctx.restore();
+
+    // 終了してゲームクリアへ
+    if (elapsed >= dur) {
+        gameState.bossFinaleActive = false;
+        gameState.bossCleared = true;     // 以後ボス再出現させない
+        triggerGameClear();               // モーダル表示（下#6参照）
+    }
+    }
+
+
+    // ゲームクリア演出
+    function triggerGameClear() {
+    // ボス関連のクリーンアップ（既存のまま）
+    gameState.boss = null;
+    gameState.bossBeams.length = 0;
+    gameState.bossWarningActive = false;
+    gameState.bossPending = false;
+    gameState.bossCleared = true;
+
+    // スコア表示＆ゲーム停止
+    document.getElementById('finalScoreClear').textContent = gameState.score;
+    gameState.gameRunning = false;
+    // 固定ボードを表示
+    const board = document.getElementById('gameClearBoard');
+    if (board) board.style.display = 'block';
+    }
+
 
         
     // プレイヤーと敵の衝突判定
@@ -1723,7 +1875,7 @@ function updateEnemyBeams() {
     
     // プレイヤー更新（なめらかな移動）
     function updatePlayer() {
-        const moveSpeed = 6;
+        const moveSpeed = 18;
         if (gameState.keys['ArrowLeft'] && gameState.player.x > 0) {
             gameState.player.x -= moveSpeed;
         }
@@ -1744,6 +1896,7 @@ function updateEnemyBeams() {
     
     // 敵生成
     function spawnEnemy() {
+    if (gameState.boss || gameState.bossWarningActive || gameState.bossFinaleActive) return;
     try {
         if (gameState.boss || gameState.bossWarningActive) return; // ← 追加ポイント
 
@@ -1780,9 +1933,8 @@ function gameLoop() {
 
         // ★ スコア到達でボス出現
         spawnBossIfReady();
-
-        // ★ ボス更新・描画
-        if (gameState.boss) {
+            // ★ ボス更新・描画（フィナーレ中は描かない）
+            if (gameState.boss && !gameState.bossFinaleActive) {
             const now = performance.now();
             gameState.boss.update(now);
             gameState.boss.draw();
@@ -1812,6 +1964,13 @@ function gameLoop() {
             if (ex && ex.draw && ex.update) { ex.draw(); return ex.update(); }
             return false;
         });
+        gameState.explosions = gameState.explosions.filter(ex => {
+        if (ex && ex.draw && ex.update) { ex.draw(); return ex.update(); }
+        return false;
+        });
+
+        // ★ 3秒大爆発の演出
+        updateAndDrawBossFinale();
 
         // メッセージ
         gameState.messages = gameState.messages.filter(msg => {
@@ -1849,6 +2008,12 @@ function gameLoop() {
     
     // ゲーム再開
     function restartGame() {
+        // ① まず全てのオーバーレイ/ボードを閉じる（存在すれば）
+        ['gameOver', 'gameClear', 'gameClearBoard', 'gameClearBanner'].forEach(id => {
+            const el = document.getElementById(id);
+            if (el) el.style.display = 'none';
+        });
+        // ② 状態を初期化（bossCleared は1回だけ定義）
         gameState = {
             life: 3,
             score: 0,
@@ -1867,26 +2032,30 @@ function gameLoop() {
             height: 40
             },
             keys: {},
-            // 追加
+            // ボス関連
             boss: null,
             bossBeams: [],
             bossWarningActive: false,
             bossWarningStart: 0,
             bossPending: false,
             bossTriggerScore: 100,
+            bossCleared: false,       // ← 重複を削除
+            bossFinaleActive: false,
+            bossFinaleStart: 0,
+            bossFinalePos: { x: 0, y: 0 }
         };
-        // 画面のオーバーレイ等を先にリセット
-        document.getElementById('gameOver').style.display = 'none';
 
-        // ★ 山札リセット（使っている方のみ呼び出す）
-        if (typeof refillVocabDeck === 'function') refillVocabDeck();   // 通常敵
-        if (typeof refillBossDeck  === 'function') refillBossDeck();    // ボス
+        // ③ 山札などをリセット（使っている場合）
+        if (typeof refillVocabDeck === 'function') refillVocabDeck(); // 通常敵
+        if (typeof refillBossDeck  === 'function') refillBossDeck();  // ボス
+        if (typeof currentVocabIndex !== 'undefined') currentVocabIndex = 0;
+        if (typeof bossVocabIndex    !== 'undefined') bossVocabIndex = 0;
 
-        // スターとUI初期化
+        // ④ 背景とUIの初期化
         initStars();
         updateUI();
 
-        // ループ開始（1回だけ）
+        // ⑤ ループ開始（1回だけ呼べばOK）
         gameLoop();
         }
 
