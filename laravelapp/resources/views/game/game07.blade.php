@@ -171,13 +171,20 @@
         font-size: 16px;
         border-radius: 10px;
         }
+        .life-display{
+        font-size: 22px;        /* 絵文字サイズ */
+        letter-spacing: 2px;    /* 絵文字の間隔 */
+        z-index: 12;
+        text-shadow: 0 1px 2px rgba(0,0,0,.35);
+        }
+
     </style>
 </head>
 <body>
     <div class="game-container">
     <div class="game-ui">
-        <div class="life-display">❤️ Life: <span id="lifeCount">3</span></div>
-        <div class="score-display">⭐ Score: <span id="scoreCount">0</span></div>
+    <div class="life-display" id="lifeDisplay" aria-label="ライフ"></div>
+    <div class="score-display">⭐ Score: <span id="scoreCount">0</span></div>
     </div>
 
     <div class="instructions">
@@ -1889,10 +1896,20 @@ function updateEnemyBeams() {
             gameState.player.y += moveSpeed;
         }
     }
-    function updateUI() {
-        document.getElementById('lifeCount').textContent = gameState.life;
-        document.getElementById('scoreCount').textContent = gameState.score;
-    }
+    // ライフ表示
+    function renderLife(n){
+        const el = document.getElementById('lifeDisplay');
+        if (!el) return;
+        el.textContent = '🧡'.repeat(Math.max(0, n));
+        el.setAttribute('aria-label', `ライフ ${n}`);
+        }
+    // スコア表示
+    function updateUI(){
+        renderLife(gameState.life);
+        const sc = document.getElementById('scoreCount');
+        if (sc) sc.textContent = gameState.score;
+        }
+
     
     // 敵生成
     function spawnEnemy() {
