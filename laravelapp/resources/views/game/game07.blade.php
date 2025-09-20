@@ -185,50 +185,145 @@
         
         // 英単語データ（30個）
         const vocabularyData = [
-            { word: "Administrator", options: ["管理者", "遊牧民", "国会議員", "両生類"], correct: 1 },
-            { word: "Beautiful", options: ["醜い", "美しい", "巨大な", "小さな"], correct: 2 },
-            { word: "Computer", options: ["椅子", "机", "コンピュータ", "本"], correct: 3 },
-            { word: "Democracy", options: ["独裁", "共和制", "君主制", "民主主義"], correct: 4 },
-            { word: "Education", options: ["教育", "娯楽", "運動", "食事"], correct: 1 },
-            { word: "Fantastic", options: ["普通の", "素晴らしい", "悪い", "古い"], correct: 2 },
-            { word: "Geography", options: ["歴史", "数学", "地理", "科学"], correct: 3 },
-            { word: "Hospital", options: ["学校", "公園", "店", "病院"], correct: 4 },
-            { word: "Important", options: ["重要な", "簡単な", "難しい", "楽しい"], correct: 1 },
-            { word: "Journey", options: ["家", "旅行", "仕事", "勉強"], correct: 2 },
-            { word: "Kitchen", options: ["寝室", "浴室", "台所", "居間"], correct: 3 },
-            { word: "Language", options: ["音楽", "絵画", "ダンス", "言語"], correct: 4 },
-            { word: "Mountain", options: ["山", "海", "川", "湖"], correct: 1 },
-            { word: "Necessary", options: ["不要な", "必要な", "可能な", "不可能な"], correct: 2 },
-            { word: "Ocean", options: ["森", "砂漠", "海洋", "草原"], correct: 3 },
-            { word: "Peaceful", options: ["騒がしい", "危険な", "忙しい", "平和な"], correct: 4 },
-            { word: "Question", options: ["質問", "答え", "問題", "解決"], correct: 1 },
-            { word: "Rainbow", options: ["稲妻", "虹", "雲", "雨"], correct: 2 },
-            { word: "Sculpture", options: ["音楽", "詩", "彫刻", "小説"], correct: 3 },
-            { word: "Telephone", options: ["テレビ", "ラジオ", "新聞", "電話"], correct: 4 },
-            { word: "Universe", options: ["宇宙", "地球", "太陽", "月"], correct: 1 },
-            { word: "Vegetable", options: ["肉", "野菜", "果物", "パン"], correct: 2 },
-            { word: "Wonderful", options: ["普通の", "悪い", "素晴らしい", "古い"], correct: 3 },
-            { word: "Yesterday", options: ["今日", "明日", "来週", "昨日"], correct: 4 },
-            { word: "Adventure", options: ["冒険", "平凡", "退屈", "日常"], correct: 1 },
-            { word: "Butterfly", options: ["蜘蛛", "蝶", "蜂", "蟻"], correct: 2 },
-            { word: "Celebrate", options: ["悲しむ", "怒る", "祝う", "心配する"], correct: 3 },
-            { word: "Dangerous", options: ["安全な", "簡単な", "楽しい", "危険な"], correct: 4 },
-            { word: "Elephant", options: ["象", "ライオン", "虎", "熊"], correct: 1 },
-            { word: "Furniture", options: ["食べ物", "家具", "服", "本"], correct: 2 }
+        { word:"mom",    options:["おかあさん","おとうさん","あかちゃん","おとこのこ"], correct:1 },
+        { word:"dad",    options:["おかあさん","おとうさん","おんなのこ","あかちゃん"], correct:2 },
+        { word:"baby",   options:["おとこのこ","おんなのこ","あかちゃん","おかあさん"], correct:3 },
+        { word:"boy",    options:["おんなのこ","あかちゃん","おとうさん","おとこのこ"], correct:4 },
+        { word:"girl",   options:["おんなのこ","おとこのこ","おかあさん","ねこ"],       correct:1 },
+        { word:"red",    options:["あお","あか","しろ","くろ"],                           correct:2 },
+        { word:"blue",   options:["あか","きいろ","あお","くろ"],                         correct:3 },
+        { word:"green",  options:["あか","あお","きいろ","みどり"],                       correct:4 },
+        { word:"yellow", options:["きいろ","あお","しろ","くろ"],                         correct:1 },
+        { word:"black",  options:["しろ","くろ","あか","きいろ"],                         correct:2 },
+        { word:"white",  options:["あか","くろ","しろ","あお"],                           correct:3 },
+        { word:"big",    options:["ちいさい","あつい","つめたい","おおきい"],               correct:4 },
+        { word:"small",  options:["ちいさい","おおきい","あつい","つめたい"],             correct:1 },
+        { word:"hot",    options:["つめたい","あつい","ちいさい","おおきい"],             correct:2 },
+        { word:"cold",   options:["あつい","おおきい","つめたい","きいろ"],               correct:3 },
+        { word:"run",    options:["あるく","たべる","のむ","はしる"],                     correct:4 },
+        { word:"jump",   options:["とぶ","あるく","はしる","ねる"],                       correct:1 },
+        { word:"walk",   options:["はしる","あるく","たべる","のむ"],                     correct:2 },
+        { word:"eat",    options:["のむ","はしる","たべる","あるく"],                     correct:3 },
+        { word:"drink",  options:["たべる","はしる","あるく","のむ"],                     correct:4 },
+        { word: "love",       options: ["あい", "いぬ", "たまご", "ねこ"], correct: 1 },
+        { word: "egg",        options: ["りんご", "たまご", "みず", "そら"], correct: 2 },
+        { word: "dog",        options: ["とり", "ねこ", "ぞう", "いぬ"],     correct: 4 },
+        { word: "cat",        options: ["いぬ", "ねこ", "うま", "さかな"],   correct: 2 },
+        { word: "elephant",   options: ["ねこ", "いぬ", "ぞう", "とり"],     correct: 3 },
+        { word: "apple",      options: ["ばなな", "いちご", "りんご", "みかん"], correct: 3 },
+        { word: "water",      options: ["みず", "き", "そら", "やま"],       correct: 1 },
+        { word: "sky",        options: ["かわ", "そら", "つち", "き"],       correct: 2 },
+        { word: "moon",       options: ["たいよう", "やま", "つき", "かわ"], correct: 3 },
+        { word: "sun",        options: ["つき", "たいよう", "ほし", "ゆき"], correct: 2 },
+        { word: "mountain",   options: ["やま", "うみ", "かわ", "もり"],     correct: 1 },
+        { word: "river",      options: ["うみ", "そら", "くも", "かわ"],     correct: 4 },
+        { word: "car",        options: ["くるま", "じてんしゃ", "でんしゃ", "ふね"], correct: 1 },
+        { word: "train",      options: ["くるま", "ひこうき", "ふね", "でんしゃ"],   correct: 4 },
+        { word: "strawberry", options: ["いちご", "みかん", "ぶどう", "りんご"],     correct: 1 },
+        { word: "flower",     options: ["かばん", "くつ", "ぼうし", "はな"],         correct: 4 },
+        { word: "hand",       options: ["あし", "て", "め", "みみ"],                 correct: 2 },
+        { word: "foot",       options: ["て", "みみ", "め", "あし"],                 correct: 4 },
+        { word: "ear",        options: ["め", "くち", "みみ", "は"],                 correct: 3 },
+        { word: "mouth",      options: ["は", "くち", "かお", "て"],                 correct: 2 },
+        { word: "face",       options: ["かお", "くつ", "ぼうし", "かさ"],           correct: 1 },
+        { word: "book",       options: ["うた", "ほん", "え", "おやつ"],             correct: 2 },
+        { word: "pencil",     options: ["えんぴつ", "じ", "え", "ほん"],             correct: 1 },
+        { word: "picture",    options: ["うた", "あそび", "え", "おにぎり"],         correct: 3 },
+        { word: "song",       options: ["うた", "え", "ほん", "やさい"],             correct: 1 },
+        { word: "rain",       options: ["くも", "ゆき", "かぜ", "あめ"],             correct: 4 },
+        { word: "snow",       options: ["あめ", "ゆき", "かぜ", "くも"],             correct: 2 },
+        { word: "wind",       options: ["ゆき", "くも", "あめ", "かぜ"],             correct: 4 },
+        { word: "red",        options: ["あお", "きいろ", "あか", "しろ"],           correct: 3 },
+        { word: "blue",       options: ["あお", "しろ", "くろ", "あか"],             correct: 1 }
         ];
-        
+
+        const emojiMap = {
+        "あい":"💖", "あめ":"☔️", "ゆき":"❄️", "くも":"☁️", "かぜ":"🌬️","みず":"💧","うま":"🐴","つち":"🟫","き":"🌲",
+        "たいよう":"☀️", "つき":"🌕", "ほし":"⭐️", "そら":"🌤️",
+        "りんご":"🍎", "ばなな":"🍌", "いちご":"🍓", "ぶどう":"🍇", "みかん":"🍊",
+        "たまご":"🥚", "いぬ":"🐶", "ねこ":"🐱", "ぞう":"🐘", "とり":"🐦", "さかな":"🐟",
+        "やま":"⛰️", "うみ":"🌊", "かわ":"🏞️",
+        "くるま":"🚗", "でんしゃ":"🚆", "ふね":"⛴️", "ひこうき":"✈️",
+        "はな":"🌸", "ほん":"📖", "えんぴつ":"✏️", "え":"🖼️", "うた":"🎵",
+        "あか":"🔴", "あお":"🔵", "きいろ":"🟡", "しろ":"⚪️", "くろ":"⚫️",
+        "て":"✋", "あし":"🦶", "みみ":"👂", "め":"👀", "くち":"👄", "かお":"🙂",
+        "おかあさん": "👩",
+        "おとうさん": "👨",
+        "あかちゃん": "👶",
+        "おとこのこ": "👦",
+        "おんなのこ": "👧",
+        "ねこ":       "🐱",
+        "あお":   "🔵",
+        "あか":   "🔴",
+        "しろ":   "⚪️",
+        "くろ":   "⚫️",
+        "きいろ": "🟡",
+        "みどり": "🟢",
+        "おおきい": "🐘",
+        "ちいさい": "🐣",
+        "あつい":   "🔥",
+        "つめたい": "❄️",
+        "あるく": "🚶",
+        "はしる": "🏃",
+        "とぶ":   "🕊️",
+        "ねる":   "🛌",
+        "たべる": "🍽️",
+        "のむ":   "🥤"
+        };
         let currentVocabIndex = 0;
+
+        // ★ ランダム山札（重複防止して一巡する）
+        let vocabDeck = [];
+        function refillVocabDeck() {
+        // 0..N-1 のインデックス山札を作ってフィッシャー–イェーツでシャッフル
+        vocabDeck = Array.from({length: vocabularyData.length}, (_, i) => i);
+        for (let i = vocabDeck.length - 1; i > 0; i--) {
+            const j = Math.floor(Math.random() * (i + 1));
+            [vocabDeck[i], vocabDeck[j]] = [vocabDeck[j], vocabDeck[i]];
+        }
+        }
+        function getRandomVocab() {
+        if (vocabDeck.length === 0) refillVocabDeck();
+        const idx = vocabDeck.pop();            // 山札の末尾から1枚引く
+        return vocabularyData[idx];
+        }
+        // 初期化
+        refillVocabDeck();
         
         // 難単語（ボス用）
         const hardVocabularyData = [
-        { word:"Ephemeral",      options:["永続的","短命の","壮大な","無害な"], correct:2 },
-        { word:"Obfuscate",      options:["明確にする","難読化する","保存する","模倣する"], correct:2 },
-        { word:"Ubiquitous",     options:["遍在する","希少な","不安定な","過剰な"], correct:1 },
-        { word:"Meticulous",     options:["大雑把な","用心深い","迅速な","攻撃的な"], correct:2 },
-        { word:"Conundrum",      options:["解決策","難問","伝統","誤解"],               correct:2 },
-        { word:"Ineffable",      options:["言葉にできない","避けられる","明白な","矛盾した"], correct:1 },
-        { word:"Obsequious",     options:["横柄な","忠実な","へつらう","退屈な"],         correct:3 },
-        { word:"Quintessential", options:["二流の","典型的な","曖昧な","過小評価の"],       correct:2 },
+            { word:"frog",     options:["かえる🐸","さる🐵","きつね🦊","ねずみ🐭"],                 correct:1 },
+            { word:"panda",    options:["らいおん🦁","ぱんだ🐼","くま🐻","ねこ🐱"],                   correct:2 },
+            { word:"monkey",   options:["いぬ🐶","とり🐦","ねこ🐱","さる🐵"],                         correct:4 },
+            { word:"fox",      options:["ねずみ🐭","ぶた🐷","くま🐻","きつね🦊"],                     correct:4 },
+            { word:"koala",    options:["こあら🐨","くじら🐋","うし🐮","うま🐴"],                     correct:1 },
+            { word:"whale",    options:["いるか🐬","ぺんぎん🐧","くじら🐋","さかな🐟"],               correct:3 },
+            { word:"dolphin",  options:["いるか🐬","かに🦀","たこ🐙","えび🦐"],                       correct:1 },
+            { word:"penguin",  options:["にわとり🐔","あひる🦆","ぺんぎん🐧","とり🐦"],               correct:3 },
+            { word:"giraffe",  options:["しまうま🦓","きりん🦒","うさぎ🐰","らくだ🐫"],               correct:2 },
+            { word:"zebra",    options:["きりん🦒","やぎ🐐","しまうま🦓","ひつじ🐑"],                 correct:3 },
+
+            { word:"peach",    options:["めろん🍈","りんご🍎","ばなな🍌","もも🍑"],                   correct:4 },
+            { word:"melon",    options:["いちご🍓","めろん🍈","ぶどう🍇","みかん🍊"],                 correct:2 },
+            { word:"carrot",   options:["じゃがいも🥔","にんじん🥕","たまねぎ🧅","とまと🍅"],         correct:2 },
+            { word:"potato",   options:["じゃがいも🥔","にんじん🥕","さつまいも🍠","きゃべつ🥬"],     correct:1 },
+            { word:"tomato",   options:["とまと🍅","きゅうり🥒","なす🍆","とうもろこし🌽"],           correct:1 },
+            { word:"cherry",   options:["さくらんぼ🍒","ぶどう🍇","もも🍑","りんご🍎"],               correct:1 },
+            { word:"rice",     options:["ぱん🍞","めん🍜","ぷりん🍮","ごはん🍚"],                     correct:4 },
+            { word:"cookie",   options:["あめ🍬","くっきー🍪","けーき🍰","あいす🍨"],                 correct:2 },
+            { word:"candy",    options:["くっきー🍪","けーき🍰","あめ🍬","あいす🍨"],                 correct:3 },
+            { word:"juice",    options:["みず💧","じゅーす🧃","ぎゅうにゅう🥛","おちゃ🍵"],           correct:2 },
+
+            { word:"balloon",  options:["たこ🪁","しゃぼんだま🫧","ぼうし🎩","ふうせん🎈"],           correct:4 },
+            { word:"kite",     options:["ふうせん🎈","しゃぼんだま🫧","ぼうし🎩","たこ🪁"],           correct:4 },
+            { word:"robot",    options:["ぬいぐるみ🧸","でんしゃ🚆","ろぼっと🤖","くるま🚗"],         correct:3 },
+            { word:"bus",      options:["じてんしゃ🚲","くるま🚗","ふね⛵️","ばす🚌"],                 correct:4 },
+            { word:"boat",     options:["ひこうき✈️","ふね⛵️","でんしゃ🚆","ばす🚌"],                 correct:2 },
+            { word:"plane",    options:["ふね⛵️","ばす🚌","ひこうき✈️","でんしゃ🚆"],                 correct:3 },
+            { word:"star",     options:["つき🌕","たいよう☀️","ほし⭐️","にじ🌈"],                     correct:3 },
+            { word:"tree",     options:["はな🌸","くさ🌿","はっぱ🍃","き🌲"],                           correct:4 },
+            { word:"rainbow",  options:["にじ🌈","くも☁️","あめ☔️","ゆき❄️"],                         correct:1 },
+            { word:"ice cream",options:["けーき🍰","くっきー🍪","あいすくりーむ🍨","あめ🍬"],           correct:3 }
         ];
         let bossVocabIndex = 0;
 
@@ -285,7 +380,7 @@ class Enemy {
     this.width  = 56;
     this.height = 56;
     this.speed  = 1 + Math.random();
-    this.vocab  = vocabularyData[currentVocabIndex % vocabularyData.length];
+    this.vocab = getRandomVocab();
     this.lastBeamTime  = 0;
     this.beamInterval  = 2000 + Math.random() * 2000;
     this.phase = Math.random() * Math.PI * 2; // 個体差
@@ -509,18 +604,24 @@ update() {
   ctx.strokeText(this.vocab.word, cx, top + 22);
   ctx.fillText(this.vocab.word,   cx, top + 22);
 
-  // 選択肢（太字＆中央）
-  ctx.font = 'bold 12px Arial';
-  for (let i = 0; i < 4; i++) {
-    const text = `${i + 1}. ${this.vocab.options[i]}`;
-    const maxLength = 16; // 一行を少し長めに
-    const displayText = text.length > maxLength ? text.slice(0, maxLength) + '…' : text;
-    const y = top + 42 + i * 13; // 行間も少し広め
-    ctx.strokeText(displayText, cx, y);
-    ctx.fillText(displayText,   cx, y);
+  // 選択肢（太字＆中央）★絵文字付与＋はみ出し対策
+ctx.font = 'bold 12px Arial';
+for (let i = 0; i < 4; i++) {
+  const opt   = this.vocab.options[i];           // 例: "あめ"
+  const emoji = emojiMap[opt] || '';              // 例: "☔️"
+  const label = `${i + 1}. ${opt}${emoji}`;       // "1. あめ☔️"
+  const y = top + 42 + i * 13;
+
+  // はみ出し防止（カード幅に収める）
+  const maxW = cardW - 12;                        // パディング相当
+  let textToDraw = label;
+  while (ctx.measureText(textToDraw).width > maxW && textToDraw.length > 2) {
+    textToDraw = textToDraw.slice(0, -2) + '…';
   }
 
-  ctx.restore();
+  ctx.strokeText(textToDraw, cx, y);
+  ctx.fillText(textToDraw,   cx, y);
+}
 }
 }
 }
@@ -1760,6 +1861,12 @@ function gameLoop() {
             bossPending: false,
             bossTriggerScore: 100,
         };
+        // ★ 山札リセット
+        refillVocabDeck();
+        // もし currentVocabIndex をまだ残していたら不要なので0代入は削除可
+        // currentVocabIndex = 0;
+        bossVocabIndex = 0; //（ボス側を従来通り使うならこのままでOK）
+initStars();
         currentVocabIndex = 0;
         bossVocabIndex = 0;
         initStars();
