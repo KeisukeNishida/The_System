@@ -2,40 +2,49 @@
 <html lang="ja">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no">
     <title>English Learning Shooting Game</title>
     <style>
-       /* ===== Base ===== */
-        body {
-        margin: 0;
-        padding: 0;
-        background: #000;
-        color: #fff;
-        font-family: 'Arial', sans-serif;
-        overflow: hidden;
-        display: flex;
-        justify-content: center;
-        align-items: center;
-        min-height: 100vh;
-        }
+    /* 画面の実サイズを正しく取る */
+html, body { height: 100%; }
 
-        /* キャンバスの入れ物（サイズ固定） */
-        .game-container{
-        position: relative;
-        width: 400px;
-        height: 800px;
-        }
+body{
+  margin: 0;
+  padding: 0;
+  background: #000;
+  color: #fff;
+  font-family: 'Arial', sans-serif;
 
-        /* キャンバスは全面に敷く */
-        #gameCanvas{
-        position: absolute;
-        inset: 0;
-        width: 100%;
-        height: 100%;
-        background: linear-gradient(180deg, #001133 0%, #003366 100%);
-        border: none;
-        touch-action: none;
-        }
+  /* ← ここをflexにしない（transformで中央に置くため） */
+  display: block;
+
+  min-height: 100dvh;             /* モバイルのアドレスバー対策 */
+  overflow: hidden;
+  overscroll-behavior: none;
+  -webkit-text-size-adjust: 100%;
+  touch-action: manipulation;
+}
+
+/* ゲームは論理解像度 400x800 固定。表示はJSで拡縮＆中央寄せ */
+.game-container{
+  position: fixed;          /* 画面に固定 */
+  left: 0; top: 0;
+  width: 400px;
+  height: 800px;
+  transform-origin: top left;
+}
+
+/* キャンバスは入れ物いっぱいに */
+#gameCanvas{
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(180deg, #001133 0%, #003366 100%);
+  border: none;
+  touch-action: none;
+}
+
 
         /* ===== UI ===== */
         .game-ui {
@@ -358,7 +367,6 @@
       <button class="restart-btn" onclick="restartGame()">リスタート</button>
     </div>
   </div>
-</body>
 
     <script>
         const canvas = document.getElementById('gameCanvas');
@@ -2322,6 +2330,116 @@ answerButtons.forEach(btn => {
     initStars();
     updateUI();
     gameLoop();
-    </script>
+</script>
+<script>
+(function(){
+  const container = document.querySelector('.game-container');
+  const BASE_W = 400, BASE_H = 800; // ゲームの論理解像度
+
+  // タッチ端末や狭幅を「モバイル」扱い
+  const isMobile = () =>
+    window.matchMedia('(hover: none) and (pointer: coarse), (max-width: 768px)').matches;
+
+  function layout(){
+   // 追加：好きな縮小率（1=等倍、0.8=80%表示）
+const USER_SCALE = 0.85;   // お好みで 0.7〜1.0 くらい
+
+function layout(){
+  const ww = window.innerWidth;
+  const wh = window.innerHeight;
+
+  const fitScale = Math.min(ww / BASE_W, wh / BASE_H);
+
+  // 元のスケール計算
+  const base = isMobile() ? fitScale : Math.min(1, fitScale);
+
+  // ここで小さくする
+  const s = base * USER_SCALE;
+
+  const tx = Math.round((ww - BASE_W * s) / 2);
+  const ty = Math.round((wh - BASE_H * s) / 2);
+
+  container.style.transform = `translate(${tx}px, ${ty}px) scale(${s})`;
+}
+  }
+
+  window.addEventListener('resize', layout, { passive: true });
+  window.addEventListener('orientationchange', layout);
+  window.addEventListener('DOMContentLoaded', layout);
+  window.addEventListener('load', layout);
+})();
+
+(function(){
+  const container = document.querySelector('.game-container');
+  const BASE_W = 400, BASE_H = 800; // ゲームの論理解像度
+
+  // タッチ端末や狭幅を「モバイル」扱い
+  const isMobile = () =>
+    window.matchMedia('(hover: none) and (pointer: coarse), (max-width: 768px)').matches;
+
+  function layout(){
+   // 追加：好きな縮小率（1=等倍、0.8=80%表示）
+const USER_SCALE = 0.85;   // お好みで 0.7〜1.0 くらい
+
+function layout(){
+  const ww = window.innerWidth;
+  const wh = window.innerHeight;
+
+  const fitScale = Math.min(ww / BASE_W, wh / BASE_H);
+
+  // 元のスケール計算
+  const base = isMobile() ? fitScale : Math.min(1, fitScale);
+
+  // ここで小さくする
+  const s = base * USER_SCALE;
+
+  const tx = Math.round((ww - BASE_W * s) / 2);
+  const ty = Math.round((wh - BASE_H * s) / 2);
+
+  container.style.transform = `translate(${tx}px, ${ty}px) scale(${s})`;
+}
+  }
+
+  window.addEventListener('resize', layout, { passive: true });
+  window.addEventListener('orientationchange', layout);
+  window.addEventListener('DOMContentLoaded', layout);
+  window.addEventListener('load', layout);
+})();
+
+  (function(){
+    const container = document.querySelector('.game-container');
+    const BASE_W = 400, BASE_H = 800;
+  
+    // ★ 追加：表示を任意に縮小する係数（0.5 = 50%）
+    const USER_SCALE = 0.5;
+  
+    const isMobile = () =>
+      window.matchMedia('(hover: none) and (pointer: coarse), (max-width: 768px)').matches;
+  
+    function layout(){
+      const ww = window.innerWidth;
+      const wh = window.innerHeight;
+  
+      const fitScale = Math.min(ww / BASE_W, wh / BASE_H);
+  
+      // 元のスケール計算
+      const base = isMobile() ? fitScale : Math.min(1, fitScale);
+  
+      // ★ ここで「半分」にする
+      const s = base * USER_SCALE;
+  
+      const tx = Math.round((ww - BASE_W * s) / 2);
+      const ty = Math.round((wh - BASE_H * s) / 2);
+  
+      container.style.transform = `translate(${tx}px, ${ty}px) scale(${s})`;
+    }
+  
+    window.addEventListener('resize', layout, { passive: true });
+    window.addEventListener('orientationchange', layout);
+    window.addEventListener('DOMContentLoaded', layout);
+    window.addEventListener('load', layout);
+  })();
+  </script>
 </body>
 </html>
+
