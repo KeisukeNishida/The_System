@@ -865,259 +865,252 @@ function rectsOverlap(a, b) {
   );
 }
 
-        // 敵クラス
-      // ==== 修正版 Enemy クラス（丸ピンク＋大きな目＋激しい羽） ====
+
+// === Canvas: Pink Wolf (enemy) =========================================
+function drawPinkWolf(ctx, cx, cy, w=56, h=56, t=0){
+  ctx.save();
+  ctx.translate(cx, cy);
+  ctx.scale(w/120, h/120);      // 基準 120x120
+
+  const blink = 0.82 + 0.18*Math.abs(Math.sin(t*1.6)); // まばたき
+  const earWig = Math.sin(t*2.2)*2;                    // 耳ピコ
+
+  ctx.lineJoin = 'round';
+  ctx.lineCap  = 'round';
+
+  // 顔ベース（ピンクのグラデ）
+  let g = ctx.createRadialGradient(0,-8,8, 0,8,68);
+  g.addColorStop(0,'#ffe9f4'); g.addColorStop(0.45,'#ff9bc6'); g.addColorStop(1,'#ff5aa5');
+  ctx.fillStyle = g;
+  ctx.beginPath(); ctx.ellipse(0, 10, 54, 48, 0, 0, Math.PI*2); ctx.fill();
+
+  // 耳（外）
+  ctx.fillStyle = '#ff7fb7';
+  ctx.beginPath();
+  ctx.moveTo(-40,-4); ctx.quadraticCurveTo(-58,-28+earWig, -32,-36+earWig);
+  ctx.quadraticCurveTo(-22,-22+earWig, -28,-10+earWig); ctx.closePath(); ctx.fill();
+  ctx.beginPath();
+  ctx.moveTo(40,-4); ctx.quadraticCurveTo(58,-28-earWig, 32,-36-earWig);
+  ctx.quadraticCurveTo(22,-22-earWig, 28,-10-earWig); ctx.closePath(); ctx.fill();
+
+  // 耳（内）
+  ctx.fillStyle = '#ffd0e6';
+  ctx.beginPath();
+  ctx.moveTo(-33,-8); ctx.quadraticCurveTo(-44,-26+earWig, -26,-30+earWig);
+  ctx.quadraticCurveTo(-18,-20+earWig, -22,-10+earWig); ctx.closePath(); ctx.fill();
+  ctx.beginPath();
+  ctx.moveTo(33,-8); ctx.quadraticCurveTo(44,-26-earWig, 26,-30-earWig);
+  ctx.quadraticCurveTo(18,-20-earWig, 22,-10-earWig); ctx.closePath(); ctx.fill();
+
+  // ほっぺ
+  ctx.fillStyle = 'rgba(255,255,255,0.95)';
+  ctx.beginPath(); ctx.ellipse(-20, 20, 18, 14, 0, 0, Math.PI*2); ctx.fill();
+  ctx.beginPath(); ctx.ellipse( 20, 20, 18, 14, 0, 0, Math.PI*2); ctx.fill();
+
+  // マズル（白）
+  ctx.beginPath();
+  ctx.moveTo(-28, 26); ctx.quadraticCurveTo(0, 6, 28, 26);
+  ctx.quadraticCurveTo(10, 36, 0, 36);
+  ctx.quadraticCurveTo(-10, 36, -28, 26); ctx.closePath(); ctx.fill();
+
+  // 目
+  const eye = (ex)=>{
+    ctx.save(); ctx.translate(ex, 2); ctx.scale(1, blink);
+    ctx.fillStyle = '#fff';
+    ctx.beginPath(); ctx.ellipse(0, 0, 16, 12, 0, 0, Math.PI*2); ctx.fill();
+    let ig = ctx.createRadialGradient(-3,-3,2, 0,0,12);
+    ig.addColorStop(0,'#ff7fb7'); ig.addColorStop(1,'#7a0d3a');
+    ctx.fillStyle = ig; ctx.beginPath(); ctx.ellipse(0, 0, 9, 8, 0, 0, Math.PI*2); ctx.fill();
+    ctx.fillStyle = '#141014'; ctx.beginPath(); ctx.arc(0,0,4.2,0,Math.PI*2); ctx.fill();
+    ctx.fillStyle = '#fff'; ctx.beginPath(); ctx.arc(-2,-2,1.8,0,Math.PI*2); ctx.fill();
+    ctx.restore();
+  };
+  eye(-18); eye(18);
+
+  // ハート模様
+  ctx.fillStyle = '#ffb2d4';
+  ctx.beginPath();
+  ctx.moveTo(0,-6);
+  ctx.bezierCurveTo(-8,-16,-24,-6,0,12);
+  ctx.bezierCurveTo(24,-6,8,-16,0,-6);
+  ctx.fill();
+
+  // 鼻と口
+  ctx.fillStyle = '#2b0b1a'; ctx.beginPath(); ctx.arc(0, 24, 4.4, 0, Math.PI*2); ctx.fill();
+  ctx.lineWidth = 3; ctx.beginPath(); ctx.moveTo(-6, 28); ctx.quadraticCurveTo(0, 34, 6, 28); ctx.stroke();
+
+  ctx.restore();
+}
+
+
+  // 敵クラス
+// ==== 修正版 Enemy クラス（丸ピンク＋大きな目＋激しい羽） ====
+// 敵クラス（ピンク狼＋🍾ビーム）
 class Enemy {
   constructor() {
-    // 先にサイズ・基本プロパティを確定させる
     this.width  = 56;
     this.height = 56;
     this.speed  = (1 + Math.random()) * SPEED_MULT;
     this.vocab = getRandomVocab();
     this.lastBeamTime  = 0;
     this.beamInterval  = (2000 + Math.random() * 2000) / FIRE_RATE;
-    this.phase = Math.random() * Math.PI * 2; // 個体差
-    // その後に位置を決定
+    this.phase = Math.random() * Math.PI * 2;
     this.x = this.findValidPosition();
     this.y = -this.height;
     currentVocabIndex++;
   }
 
   findValidPosition() {
-  // Enemy.draw() のカードと同じサイズ・位置計算に合わせる
-  const CARD_W = 120, CARD_H = 84, CARD_OFFSET = 16;
-  const cardRectAt = (x, futureY, w, h) => ({
-    x: x + w/2 - CARD_W/2,
-    y: futureY - (CARD_H + CARD_OFFSET),
-    w: CARD_W, h: CARD_H
-  });
-  const overlap = (a, b) =>
-    a.x < b.x + b.w && a.x + a.w > b.x && a.y < b.y + b.h && a.y + a.h > b.y;
+    const CARD_W = 120, CARD_H = 84, CARD_OFFSET = 16;
+    const cardRectAt = (x, futureY, w, h) => ({
+      x: x + w/2 - CARD_W/2,
+      y: futureY - (CARD_H + CARD_OFFSET),
+      w: CARD_W, h: CARD_H
+    });
+    const overlap = (a, b) =>
+      a.x < b.x + b.w && a.x + a.w > b.x && a.y < b.y + b.h && a.y + a.h > b.y;
 
-  const attemptsMax = 40;
-  const margin = 8;
-
-  for (let attempt = 0; attempt < attemptsMax; attempt++) {
-    const x = Math.random() * (canvas.width - this.width);
-    const mine = cardRectAt(x, /*spawnY*/ -60, this.width, this.height);
-
-    let ok = true;
-    for (const other of gameState.enemies) {
-      if (!other) continue;
-      const theirs = cardRectAt(other.x, other.y, other.width, other.height);
-      const a = { x: mine.x - margin,   y: mine.y - margin,   w: mine.w + margin*2,   h: mine.h + margin*2 };
-      const b = { x: theirs.x - margin, y: theirs.y - margin, w: theirs.w + margin*2, h: theirs.h + margin*2 };
-      if (overlap(a, b)) { ok = false; break; }
+    const attemptsMax = 40, margin = 8;
+    for (let attempt = 0; attempt < attemptsMax; attempt++) {
+      const x = Math.random() * (canvas.width - this.width);
+      const mine = cardRectAt(x, -60, this.width, this.height);
+      let ok = true;
+      for (const other of gameState.enemies) {
+        if (!other) continue;
+        const theirs = cardRectAt(other.x, other.y, other.width, other.height);
+        const a = { x: mine.x - margin, y: mine.y - margin, w: mine.w + margin*2, h: mine.h + margin*2 };
+        const b = { x: theirs.x - margin, y: theirs.y - margin, w: theirs.w + margin*2, h: theirs.h + margin*2 };
+        if (overlap(a, b)) { ok = false; break; }
+      }
+      if (ok) return x;
     }
-    if (ok) return x;
+    return Math.random() * (canvas.width - this.width);
   }
-  // 最後は妥協
-  return Math.random() * (canvas.width - this.width);
-}
 
+  // 🍾ビーム発射（矩形当たり判定を保つ）
+  fireBeam(){
+    const w = 24, h = 24;
+    gameState.enemyBeams.push({
+      kind: 'wine',
+      emoji: '🍾',
+      x: this.x + this.width/2 - w/2,
+      y: this.y + this.height - 2,
+      width: w,
+      height: h,
+      speed: 3 * SPEED_MULT
+    });
+  }
 
-update() {
-  // Enemy.draw() のカードと同値にすること（ズレると判定と表示が合わない）
-  const CARD_W = 120, CARD_H = 84, CARD_OFFSET = 16, margin = 6;
+  update() {
+    const CARD_W = 120, CARD_H = 84, CARD_OFFSET = 16, margin = 6;
+    const cardRectAt = (x, futureY, w, h) => ({
+      x: x + w/2 - CARD_W/2,
+      y: futureY - (CARD_H + CARD_OFFSET),
+      w: CARD_W, h: CARD_H
+    });
+    const overlap = (a, b) =>
+      a.x < b.x + b.w && a.x + a.w > b.x && a.y < b.y + b.h && a.y + a.h > b.y;
 
-  const cardRectAt = (x, futureY, w, h) => ({
-    x: x + w/2 - CARD_W/2,
-    y: futureY - (CARD_H + CARD_OFFSET),
-    w: CARD_W, h: CARD_H
-  });
-  const overlap = (a, b) =>
-    a.x < b.x + b.w && a.x + a.w > b.x && a.y < b.y + b.h && a.y + a.h > b.y;
-
-  // ---- 落下（前方の敵カードに詰めすぎない）----
-  let nextY = this.y + this.speed * dt;
-  const nextRect = cardRectAt(this.x, nextY, this.width, this.height);
-
-  if (Array.isArray(gameState.enemies)) {
-    for (const other of gameState.enemies) {
-      if (!other || other === this) continue;
-      if (other.y >= this.y) {
-        const oRect = cardRectAt(other.x, other.y, other.width, other.height);
-        const a = { x: nextRect.x - margin, y: nextRect.y - margin, w: nextRect.w + margin*2, h: nextRect.h + margin*2 };
-        const b = { x: oRect.x  - margin,  y: oRect.y  - margin,  w: oRect.w  + margin*2,  h: oRect.h  + margin*2 };
-        if (overlap(a, b)) {
-          const maxNextY = oRect.y - margin + CARD_OFFSET;
-          nextY = Math.min(nextY, maxNextY);
+    // 落下（前方の敵カードに詰めすぎない）
+    let nextY = this.y + this.speed * dt;
+    const nextRect = cardRectAt(this.x, nextY, this.width, this.height);
+    if (Array.isArray(gameState.enemies)) {
+      for (const other of gameState.enemies) {
+        if (!other || other === this) continue;
+        if (other.y >= this.y) {
+          const oRect = cardRectAt(other.x, other.y, other.width, other.height);
+          const a = { x: nextRect.x - margin, y: nextRect.y - margin, w: nextRect.w + margin*2, h: nextRect.h + margin*2 };
+          const b = { x: oRect.x - margin,  y: oRect.y  - margin,  w: oRect.w  + margin*2, h: oRect.h  + margin*2 };
+          if (overlap(a, b)) {
+            const maxNextY = oRect.y - margin + CARD_OFFSET;
+            nextY = Math.min(nextY, maxNextY);
+          }
         }
       }
     }
-  }
-  this.y = nextY;
+    this.y = nextY;
 
-  // ---- ビーム発射タイマー ----
-  const now = Date.now();
-  if (!Number.isFinite(this.lastBeamTime)) this.lastBeamTime = 0;
-  if (!Number.isFinite(this.beamInterval)) this.beamInterval = 2000 + Math.random() * 2000;
+    // ビームタイマー
+    const now = Date.now();
+    if (!Number.isFinite(this.lastBeamTime)) this.lastBeamTime = 0;
+    if (!Number.isFinite(this.beamInterval)) this.beamInterval = 2000 + Math.random()*2000;
 
-  if (now - this.lastBeamTime >= this.beamInterval) {
-    if (typeof this.fireBeam === 'function') {
+    if (now - this.lastBeamTime >= this.beamInterval) {
       this.fireBeam();
-    } else {
-      // 念のため：fireBeam が無い環境でも動かす最小実装
-      gameState.enemyBeams.push({
-        x: this.x + this.width / 2 - 2,
-        y: this.y + this.height,
-        width: 5, height: 15, speed: 3 * SPEED_MULT
-      });
+      this.lastBeamTime = now;
+      this.beamInterval = (1500 + Math.random()*1500) / FIRE_RATE;
     }
-    this.lastBeamTime = now;
-    // 次の間隔を軽くランダム化（固定で良ければこの行は削除）
-    this.beamInterval = (1500 + Math.random() * 1500) / FIRE_RATE;
-}
 
-  // 画面外で消滅
-  return this.y < canvas.height + 100;
-}
-
+    // 画面外で消滅
+    return this.y < canvas.height + 100;
+  }
 
   draw() {
-    const t  = gameState.animationTime;
-    const cx = this.x + this.width  / 2;
-    const cy = this.y + this.height / 2;
-    if (!Number.isFinite(cx) || !Number.isFinite(cy)) return; // 念のため
+    const cx = this.x + this.width/2;
+    const cy = this.y + this.height/2;
+    const t  = (gameState.animationTime||0) / 60;
+    if (!Number.isFinite(cx) || !Number.isFinite(cy)) return;
 
-    // 羽ばたき
-    const flap = Math.sin(t * 0.45 + this.phase);
-    const wingScale = 1 + 0.6 * Math.abs(flap);
-    const wingAngle = flap * 0.6;
+    // ← ピンク狼を描画
+    drawPinkWolf(ctx, cx, cy, this.width, this.height, t);
 
-    // 翼
-    const drawWing = (side = -1) => {
+    // ← 単語カード（あなたの現行ロジックを維持）
+    {
+      const cardW = 120, cardH = 84, radius = 12;
+      const left = cx - cardW/2;
+      const top  = this.y - (cardH + 16);
+      const rr = (x,y,w,h,r)=>{
+        ctx.beginPath();
+        ctx.moveTo(x+r,y);
+        ctx.lineTo(x+w-r,y);
+        ctx.quadraticCurveTo(x+w,y,x+w,y+r);
+        ctx.lineTo(x+w,y+h-r);
+        ctx.quadraticCurveTo(x+w,y+h,x+w-r,y+h);
+        ctx.lineTo(x+r,y+h);
+        ctx.quadraticCurveTo(x,y+h,x,y+h-r);
+        ctx.lineTo(x,y+r);
+        ctx.quadraticCurveTo(x,y,x+r,y);
+        ctx.closePath();
+      };
       ctx.save();
-      ctx.translate(cx + side * (this.width * 0.42), cy - 2);
-      ctx.rotate(side * (0.5 + wingAngle));
-      ctx.scale(wingScale, 1);
-      ctx.fillStyle = '#ffd1e8';
-      ctx.strokeStyle = '#ff9ad1';
-      ctx.lineWidth = 2;
-      ctx.beginPath();
-      ctx.ellipse(0, 0, 22, 14, 0, 0, Math.PI * 2);
-      ctx.fill();
-      ctx.stroke();
-      ctx.globalAlpha = 0.5;
-      ctx.strokeStyle = '#ffc0dd';
-      ctx.beginPath(); ctx.moveTo(-12, -6); ctx.lineTo(12, -6); ctx.stroke();
-      ctx.beginPath(); ctx.moveTo(-14, 0);  ctx.lineTo(14, 0);  ctx.stroke();
-      ctx.beginPath(); ctx.moveTo(-12, 6);  ctx.lineTo(12, 6);  ctx.stroke();
-      ctx.globalAlpha = 1;
+      ctx.fillStyle = 'rgba(255,255,255,0.96)'; rr(left, top, cardW, cardH, radius); ctx.fill();
+      ctx.lineWidth = 1; ctx.strokeStyle = 'rgba(0,0,0,0.08)'; rr(left, top, cardW, cardH, radius); ctx.stroke();
+      ctx.textAlign = 'center'; ctx.fillStyle = '#000';
+      ctx.font = 'bold 15px Arial'; ctx.strokeStyle = 'rgba(0,0,0,0.25)'; ctx.lineWidth = 2;
+      ctx.strokeText(this.vocab.word, cx, top+22); ctx.fillText(this.vocab.word, cx, top+22);
+
+      ctx.font = 'bold 12px Arial';
+      for(let i=0;i<4;i++){
+        const opt   = this.vocab.options[i];
+        const emoji = emojiMap[opt] || '';
+        const label = `${i+1}. ${opt}${emoji}`;
+        const y = top + 42 + i*13;
+        const maxW = cardW - 12;
+        let s = label;
+        while(ctx.measureText(s).width > maxW && s.length > 2) s = s.slice(0,-2)+'…';
+        ctx.strokeText(s, cx, y); ctx.fillText(s, cx, y);
+      }
       ctx.restore();
-    };
-    drawWing(-1);
-    drawWing(+1);
-
-    // 本体（丸いピンク：ラジアルグラデ）
-    const grad = ctx.createRadialGradient(cx - 6, cy - 6, 6, cx, cy, this.width * 0.5);
-    grad.addColorStop(0.0, '#ffe2f1');
-    grad.addColorStop(0.4, '#ffb6dc');
-    grad.addColorStop(1.0, '#ff74c4');
-    ctx.fillStyle = grad;
-    ctx.beginPath();
-    ctx.ellipse(cx, cy, this.width * 0.45, this.height * 0.45, 0, 0, Math.PI * 2);
-    ctx.fill();
-
-    // 目（追従＋瞬き）
-    const px = gameState.player.x + gameState.player.width / 2;
-    const py = gameState.player.y + gameState.player.height/ 2;
-    let dx = px - cx, dy = py - cy;
-    const d = Math.max(1, Math.hypot(dx, dy));
-    dx /= d; dy /= d;
-    const pupilMax = 6;
-    const jitter   = Math.sin(t * 0.3 + this.phase) * 0.6;
-    const offX = dx * pupilMax + jitter;
-    const offY = dy * pupilMax * 0.7;
-    const eyeGap = 14, eyeR = 12, pupilR = 6;
-    const blink = 0.88 + 0.12 * Math.abs(Math.sin(t * 0.2 + this.phase * 1.7));
-
-    ctx.fillStyle = '#ffffff';
-    ctx.beginPath(); ctx.ellipse(cx - eyeGap, cy - 4, eyeR, eyeR * blink, 0, 0, Math.PI * 2); ctx.fill();
-    ctx.beginPath(); ctx.ellipse(cx + eyeGap, cy - 4, eyeR, eyeR * blink, 0, 0, Math.PI * 2); ctx.fill();
-
-    ctx.fillStyle = '#111';
-    ctx.beginPath(); ctx.ellipse(cx - eyeGap + offX, cy - 4 + offY, pupilR, pupilR * blink, 0, 0, Math.PI * 2); ctx.fill();
-    ctx.beginPath(); ctx.ellipse(cx + eyeGap + offX, cy - 4 + offY, pupilR, pupilR * blink, 0, 0, Math.PI * 2); ctx.fill();
-
-    ctx.fillStyle = '#fff';
-    ctx.beginPath(); ctx.arc(cx - eyeGap + offX - 2, cy - 6 + offY, 2, 0, Math.PI * 2); ctx.fill();
-    ctx.beginPath(); ctx.arc(cx + eyeGap + offX - 2, cy - 6 + offY, 2, 0, Math.PI * 2); ctx.fill();
-
-    // 単語カード（位置微調整）
-    // 単語カード（中央揃え＆太字）
-    // ===== 単語カード：サイズUP＋丸角（中央揃え・太字） =====
-{
-  // 敵の中心にカードを合わせる
-  const cx = this.x + this.width / 2;
-  const cardW = 120;   // 横を少し拡大（以前: 80）
-  const cardH = 84;    // 縦を少し拡大（以前: 60）
-  const radius = 12;   // 丸み
-  const left = cx - cardW / 2;
-  const top  = this.y - (cardH + 16); // 敵の少し上に表示
-
-  // 丸角パス
-  const roundRectPath = (x, y, w, h, r) => {
-    ctx.beginPath();
-    ctx.moveTo(x + r, y);
-    ctx.lineTo(x + w - r, y);
-    ctx.quadraticCurveTo(x + w, y, x + w, y + r);
-    ctx.lineTo(x + w, y + h - r);
-    ctx.quadraticCurveTo(x + w, y + h, x + w - r, y + h);
-    ctx.lineTo(x + r, y + h);
-    ctx.quadraticCurveTo(x, y + h, x, y + h - r);
-    ctx.lineTo(x, y + r);
-    ctx.quadraticCurveTo(x, y, x + r, y);
-    ctx.closePath();
-  };
-
-  // 背景（薄い影つきで視認性UP・任意）
-  ctx.save();
-
-  ctx.fillStyle = 'rgba(255, 255, 255, 0.96)';
-  roundRectPath(left, top, cardW, cardH, radius);
-  ctx.fill();
-
-  // 枠線をうすく
-  ctx.shadowBlur = 0;
-  ctx.lineWidth = 1;
-  ctx.strokeStyle = 'rgba(0,0,0,0.08)';
-  roundRectPath(left, top, cardW, cardH, radius);
-  ctx.stroke();
-
-  // 文字（中央揃え・太字）
-  ctx.textAlign = 'center';
-  ctx.fillStyle = '#000';
-
-  // 単語（少し大きく）
-  ctx.font = 'bold 15px Arial';
-  // アウトラインで読みやすく（任意）
-  ctx.strokeStyle = 'rgba(0,0,0,0.25)';
-  ctx.lineWidth = 2;
-  ctx.strokeText(this.vocab.word, cx, top + 22);
-  ctx.fillText(this.vocab.word,   cx, top + 22);
-
-  // 選択肢（太字＆中央）★絵文字付与＋はみ出し対策
-ctx.font = 'bold 12px Arial';
-for (let i = 0; i < 4; i++) {
-  const opt   = this.vocab.options[i];           // 例: "あめ"
-  const emoji = emojiMap[opt] || '';              // 例: "☔️"
-  const label = `${i + 1}. ${opt}${emoji}`;       // "1. あめ☔️"
-  const y = top + 42 + i * 13;
-
-  // はみ出し防止（カード幅に収める）
-  const maxW = cardW - 12;                        // パディング相当
-  let textToDraw = label;
-  while (ctx.measureText(textToDraw).width > maxW && textToDraw.length > 2) {
-    textToDraw = textToDraw.slice(0, -2) + '…';
+    }
   }
+}
 
-  ctx.strokeText(textToDraw, cx, y);
-  ctx.fillText(textToDraw,   cx, y);
-}
-}
-}
-}
+// 既存の forEach(beam => { ...描画... }) の中身を置換
+gameState.enemyBeams.forEach(beam => {
+  if (beam.kind === 'wine' || beam.emoji) {
+    // 🍾 絵文字ビーム（サイズは beam.width/height に依存）
+    ctx.save();
+    ctx.font = `${Math.max(beam.height, 20)}px "Apple Color Emoji","Noto Color Emoji","Segoe UI Emoji",system-ui,sans-serif`;
+    ctx.textBaseline = 'top';
+    ctx.fillText(beam.emoji || '🍾', beam.x, beam.y);
+    ctx.restore();
+  } else {
+    // ← 従来のカプセルビーム描画（あなたのコードのまま）
+    drawCapsule(beam.x, beam.y, beam.width, beam.height, beam.hue || 320);
+  }
+});
+
+
 
 function drawWordCard(vocab, centerX, top, cardW = 160, cardH = 110) {
   const radius = 12;

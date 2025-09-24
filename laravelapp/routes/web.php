@@ -95,3 +95,5 @@ Route::get('/game06', 'GameController@game06')->name('Game.game06');
 Route::get('/game07', 'GameController@game07')->name('Game.game07');
 
 Route::get('/game08', 'GameController@game08')->name('Game.game08');
+
+Route::get('/game09', 'GameController@game09')->name('Game.game09');
