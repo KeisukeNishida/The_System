@@ -643,7 +643,7 @@ body{
             bossWarningActive: false,
             bossWarningStart: 0,
             bossPending: false,          // 警告後にボスを出す予約フラグ
-            bossTriggerScore: 500,        // 出現スコア（必要なら変更可）
+            bossTriggerScore: 100,        // 出現スコア（必要なら変更可）
             bossCleared: false,
             bossCleared: false,
             bossFinaleActive: false,
@@ -768,40 +768,95 @@ body{
         refillVocabDeck();
         
         // 難単語（ボス用）
-        const hardVocabularyData = [
-            { word:"frog",     options:["かえる🐸","さる🐵","きつね🦊","ねずみ🐭"],                 correct:1 },
-            { word:"panda",    options:["らいおん🦁","ぱんだ🐼","くま🐻","ねこ🐱"],                   correct:2 },
-            { word:"monkey",   options:["いぬ🐶","とり🐦","ねこ🐱","さる🐵"],                         correct:4 },
-            { word:"fox",      options:["ねずみ🐭","ぶた🐷","くま🐻","きつね🦊"],                     correct:4 },
-            { word:"koala",    options:["こあら🐨","くじら🐋","うし🐮","うま🐴"],                     correct:1 },
-            { word:"whale",    options:["いるか🐬","ぺんぎん🐧","くじら🐋","さかな🐟"],               correct:3 },
-            { word:"dolphin",  options:["いるか🐬","かに🦀","たこ🐙","えび🦐"],                       correct:1 },
-            { word:"penguin",  options:["にわとり🐔","あひる🦆","ぺんぎん🐧","とり🐦"],               correct:3 },
-            { word:"giraffe",  options:["しまうま🦓","きりん🦒","うさぎ🐰","らくだ🐫"],               correct:2 },
-            { word:"zebra",    options:["きりん🦒","やぎ🐐","しまうま🦓","ひつじ🐑"],                 correct:3 },
+       // 難単語（ボス用）— 英検2級レベル（絵文字なし）
+const hardVocabularyData = [
+  { word:"achieve",     options:["達成する","拒否する","修理する","想像する"],                           correct:1 },
+  { word:"afford",      options:["〜する余裕がある","与える","借りる","保存する"],                       correct:1 },
+  { word:"agriculture", options:["農業","商業","工業","観光"],                                         correct:1 },
+  { word:"ancient",     options:["古代の","最新の","平均の","危険な"],                                 correct:1 },
+  { word:"announce",    options:["発表する","隠す","延期する","否定する"],                               correct:1 },
+  { word:"appreciate",  options:["感謝する","後悔する","批判する","拒む"],                               correct:1 },
+  { word:"arrange",     options:["手配する","壊す","捨てる","疑う"],                                   correct:1 },
+  { word:"attend",      options:["出席する","辞退する","忘れる","雇う"],                               correct:1 },
+  { word:"attempt",     options:["試みる","成功する","許す","避ける"],                                 correct:1 },
+  { word:"avoid",       options:["避ける","求める","祝う","探す"],                                     correct:1 },
 
-            { word:"peach",    options:["めろん🍈","りんご🍎","ばなな🍌","もも🍑"],                   correct:4 },
-            { word:"melon",    options:["いちご🍓","めろん🍈","ぶどう🍇","みかん🍊"],                 correct:2 },
-            { word:"carrot",   options:["じゃがいも🥔","にんじん🥕","たまねぎ🧅","とまと🍅"],         correct:2 },
-            { word:"potato",   options:["じゃがいも🥔","にんじん🥕","なすび🍆","きゃべつ🥬"],     correct:1 },
-            { word:"tomato",   options:["とまと🍅","きゅうり🥒","なす🍆","とうもろこし🌽"],           correct:1 },
-            { word:"cherry",   options:["さくらんぼ🍒","ぶどう🍇","もも🍑","りんご🍎"],               correct:1 },
-            { word:"rice",     options:["ぱん🍞","めん🍜","ぷりん🍮","ごはん🍚"],                     correct:4 },
-            { word:"cookie",   options:["あめ🍬","くっきー🍪","けーき🍰","あいす🍨"],                 correct:2 },
-            { word:"candy",    options:["くっきー🍪","けーき🍰","あめ🍬","あいす🍨"],                 correct:3 },
-            { word:"juice",    options:["みず💧","じゅーす🧃","ぎゅうにゅう🥛","おちゃ🍵"],           correct:2 },
+  { word:"behavior",    options:["行動","環境","距離","温度"],                                         correct:1 },
+  { word:"benefit",     options:["利益","不足","危機","誤り"],                                         correct:1 },
+  { word:"campaign",    options:["運動","地図","請求書","予報"],                                       correct:1 },
+  { word:"career",      options:["職業経歴","趣味","予算","機械"],                                     correct:1 },
+  { word:"climate",     options:["気候","文化","人口","景色"],                                         correct:1 },
+  { word:"communicate", options:["意思疎通する","競争する","輸送する","配達する"],                       correct:1 },
+  { word:"community",   options:["地域社会","家庭菜園","個人情報","銀行口座"],                           correct:1 },
+  { word:"compare",     options:["比較する","修正する","許可する","合格する"],                           correct:1 },
+  { word:"competition", options:["競争","作曲","苦情","条件"],                                         correct:1 },
+  { word:"complain",    options:["不平を言う","自慢する","賛成する","提案する"],                         correct:1 },
 
-            { word:"balloon",  options:["たこ🪁","しゃぼんだま🫧","ぼうし🎩","ふうせん🎈"],           correct:4 },
-            { word:"kite",     options:["ふうせん🎈","しゃぼんだま🫧","ぼうし🎩","たこ🪁"],           correct:4 },
-            { word:"robot",    options:["ぬいぐるみ🧸","でんしゃ🚆","ろぼっと🤖","くるま🚗"],         correct:3 },
-            { word:"bus",      options:["じてんしゃ🚲","くるま🚗","ふね⛵️","ばす🚌"],                 correct:4 },
-            { word:"boat",     options:["ひこうき✈️","ふね⛵️","でんしゃ🚆","ばす🚌"],                 correct:2 },
-            { word:"plane",    options:["ふね⛵️","ばす🚌","ひこうき✈️","でんしゃ🚆"],                 correct:3 },
-            { word:"star",     options:["つき🌕","たいよう☀️","ほし⭐️","にじ🌈"],                     correct:3 },
-            { word:"tree",     options:["はな🌸","くさ🌿","はっぱ🍃","き🌲"],                           correct:4 },
-            { word:"rainbow",  options:["にじ🌈","くも☁️","あめ☔️","ゆき❄️"],                         correct:1 },
-            { word:"ice cream",options:["けーき🍰","くっきー🍪","あいすくりーむ🍨","あめ🍬"],           correct:3 }
-        ];
+  { word:"confidence",  options:["自信","祝日","配送料","指示"],                                       correct:1 },
+  { word:"consider",    options:["よく考える","急ぐ","記録する","借りる"],                               correct:1 },
+  { word:"convenient",  options:["便利な","危険な","静かな","高価な"],                                 correct:1 },
+  { word:"create",      options:["創造する","交換する","翻訳する","破壊する"],                           correct:1 },
+  { word:"culture",     options:["文化","温度","交通","在庫"],                                         correct:1 },
+  { word:"customer",    options:["顧客","競技者","係員","訪問者"],                                     correct:1 },
+  { word:"decrease",    options:["減少する","装備する","輸入する","継続する"],                           correct:1 },
+  { word:"demand",      options:["需要","命令","証拠","緊張"],                                         correct:1 },
+  { word:"develop",     options:["発展させる","妨げる","拒む","掃除する"],                               correct:1 },
+  { word:"device",      options:["装置","請求","提案","賛成"],                                         correct:1 },
+
+  { word:"effort",      options:["努力","影","差","毒"],                                               correct:1 },
+  { word:"efficient",   options:["効率的な","平凡な","古典的な","不正確な"],                             correct:1 },
+  { word:"encourage",   options:["励ます","脅す","拒絶する","削除する"],                                 correct:1 },
+  { word:"environment", options:["環境","実験","経験","式典"],                                         correct:1 },
+  { word:"equipment",   options:["設備","事件","失敗","景気"],                                         correct:1 },
+  { word:"event",       options:["出来事","費用","賞品","在庫"],                                       correct:1 },
+  { word:"evidence",    options:["証拠","競技","収入","栄養"],                                         correct:1 },
+  { word:"experience",  options:["経験","実験","冒険","遠足"],                                         correct:1 },
+  { word:"experiment",  options:["実験","説明","遠足","経験"],                                         correct:1 },
+  { word:"factory",     options:["工場","畑","港","寺"],                                               correct:1 },
+
+  { word:"feature",     options:["特徴","欠点","費用","境界"],                                         correct:1 },
+  { word:"fuel",        options:["燃料","郵便","繊維","粉末"],                                         correct:1 },
+  { word:"generation",  options:["世代","発表","目的","緊急"],                                         correct:1 },
+  { word:"global",      options:["世界的な","個人的な","地方の","危険な"],                               correct:1 },
+  { word:"government",  options:["政府","会社","家族","研究機関"],                                     correct:1 },
+  { word:"habit",       options:["習慣","祝日","住居","料理法"],                                       correct:1 },
+  { word:"influence",   options:["影響","情報","燃料","雰囲気"],                                       correct:1 },
+  { word:"ingredient",  options:["材料","患者","政策","装置"],                                         correct:1 },
+  { word:"introduce",   options:["紹介する","削減する","避難する","誤解する"],                           correct:1 },
+  { word:"issue",       options:["問題","領収書","会費","衣装"],                                       correct:1 },
+
+  { word:"local",       options:["地元の","合法の","論理的な","孤独な"],                               correct:1 },
+  { word:"maintain",    options:["維持する","提案する","説明する","放棄する"],                           correct:1 },
+  { word:"material",    options:["材料","評価","契約","信号"],                                         correct:1 },
+  { word:"medical",     options:["医療の","音楽の","自然の","商業の"],                                 correct:1 },
+  { word:"memory",      options:["記憶","給料","会員","注意"],                                         correct:1 },
+  { word:"offer",       options:["申し出る","拒む","導く","混ぜる"],                                   correct:1 },
+  { word:"organize",    options:["組織する","占領する","推測する","分解する"],                           correct:1 },
+  { word:"patient",     options:["患者","忍耐","支払い","文句"],                                       correct:1 },
+  { word:"policy",      options:["方針","警察","詩","政治家"],                                         correct:1 },
+  { word:"population",  options:["人口","世論","物価","位置"],                                         correct:1 },
+
+  { word:"predict",     options:["予測する","保護する","発行する","採用する"],                           correct:1 },
+  { word:"prevent",     options:["防ぐ","提供する","提出する","進歩する"],                               correct:1 },
+  { word:"produce",     options:["生産する","紹介する","翻訳する","交換する"],                           correct:1 },
+  { word:"profit",      options:["利益","習慣","資源","任務"],                                         correct:1 },
+  { word:"protect",     options:["守る","選ぶ","集める","修理する"],                                   correct:1 },
+  { word:"quality",     options:["質","量","料金","資格"],                                             correct:1 },
+  { word:"recycle",     options:["再利用する","記録する","回復する","再演する"],                         correct:1 },
+  { word:"reduce",      options:["減らす","導く","生む","述べる"],                                     correct:1 },
+  { word:"replace",     options:["取り替える","思い出す","乗り換える","立証する"],                       correct:1 },
+  { word:"require",     options:["要求する","断る","修了する","出発する"],                               correct:1 },
+
+  { word:"resource",    options:["資源","研究","回答","契約"],                                         correct:1 },
+  { word:"respond",     options:["応答する","尊敬する","再利用する","復旧する"],                         correct:1 },
+  { word:"solution",    options:["解決策","解説","合図","装飾"],                                       correct:1 },
+  { word:"technology",  options:["技術","伝統","理論","地理"],                                         correct:1 },
+  { word:"tradition",   options:["伝統","翻訳","交通","取引"],                                         correct:1 },
+  { word:"traffic",     options:["交通","悲劇","利益","予算"],                                         correct:1 },
+  { word:"volunteer",   options:["ボランティア","見物人","店員","選挙人"],                               correct:1 },
+  { word:"waste",       options:["無駄・廃棄物","味覚","湿地","念願"],                                 correct:1 }
+];
+
         let bossVocabIndex = 0;
 
 
@@ -817,22 +872,51 @@ body{
             }
         }
         // ★ ボス用ランダム山札（使い切るまで重複なし）
-        let bossDeck = [];
-        function refillBossDeck() {
-        bossDeck = Array.from({ length: hardVocabularyData.length }, (_, i) => i);
-        // フィッシャー–イェーツでシャッフル
-        for (let i = bossDeck.length - 1; i > 0; i--) {
-            const j = Math.floor(Math.random() * (i + 1));
-            [bossDeck[i], bossDeck[j]] = [bossDeck[j], bossDeck[i]];
-        }
-        }
-        function getRandomBossVocab() {
-        if (bossDeck.length === 0) refillBossDeck();
-        const idx = bossDeck.pop();
-        return hardVocabularyData[idx];
-        }
-        // 初期化
-        refillBossDeck();
+       // ★ ボス用ランダム山札（正解位置1〜4を均等に割り当て）
+let bossDeck = [];
+
+function toTargetCorrect(card, targetIndex /* 1..4 */){
+  // 正解テキストを取り出し、残りをダミーとしてシャッフル
+  const correctText = card.options[card.correct - 1];
+  const distractors = card.options.filter((_, i) => i !== card.correct - 1);
+  // フィッシャー–イェーツでダミーをシャッフル
+  for (let i = distractors.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [distractors[i], distractors[j]] = [distractors[j], distractors[i]];
+  }
+  // 新しい並び：targetIndex に正解、それ以外にダミーを詰める
+  const opts = new Array(4);
+  opts[targetIndex - 1] = correctText;
+  let di = 0;
+  for (let k = 0; k < 4; k++) {
+    if (k === targetIndex - 1) continue;
+    opts[k] = distractors[di++];
+  }
+  return { word: card.word, options: opts, correct: targetIndex };
+}
+
+function refillBossDeck(){
+  // 元データの順はシャッフル
+  const idxs = Array.from({ length: hardVocabularyData.length }, (_, i) => i);
+  for (let i = idxs.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [idxs[i], idxs[j]] = [idxs[j], idxs[i]];
+  }
+  // 正解位置のスケジュール（1,2,3,4 を繰り返し）
+  const schedule = Array.from({ length: idxs.length }, (_, i) => (i % 4) + 1);
+
+  // 均等スケジュールに合わせて各カードを“再配置”してデッキ化
+  bossDeck = idxs.map((idx, i) => {
+    const card = hardVocabularyData[idx];
+    return toTargetCorrect(card, schedule[i]);
+  });
+}
+
+function getRandomBossVocab(){
+  if (bossDeck.length === 0) refillBossDeck();
+  return bossDeck.pop(); // すでにoptions並べ替え済みのオブジェクトを返す
+}
+
         // 星空描画
         function drawStars() {
             ctx.fillStyle = '#ffffff';
@@ -865,82 +949,363 @@ function rectsOverlap(a, b) {
   );
 }
 
-
-// === Canvas: Pink Wolf (enemy) =========================================
-function drawPinkWolf(ctx, cx, cy, w=56, h=56, t=0){
+// === Devil Wing Helper: 悪魔の羽（背面） ==============================
+function drawDevilWing(ctx, baseX, baseY, side = 1, t = 0, size = 1){
+  // side: -1=左, +1=右。呼び出し元ですでに translate/scale 済みのローカル座標を想定
   ctx.save();
-  ctx.translate(cx, cy);
-  ctx.scale(w/120, h/120);      // 基準 120x120
+  ctx.translate(baseX, baseY);
+  ctx.scale(size, size);
 
-  const blink = 0.82 + 0.18*Math.abs(Math.sin(t*1.6)); // まばたき
-  const earWig = Math.sin(t*2.2)*2;                    // 耳ピコ
+  const flap       = Math.sin(t * 3.2);            // 羽ばたき
+  const wingAngle  = flap * 0.95;                   // 角度振れ
+  const wingStretch= 1 + Math.abs(flap) * 0.45;     // 伸縮
+  const spines     = [];
+  const spineCount = 4;
 
-  ctx.lineJoin = 'round';
-  ctx.lineCap  = 'round';
+  // 骨（スパイン）
+  for (let i = 0; i < spineCount; i++) {
+    const a0  = -0.15 - i * 0.35;
+    const wob = Math.sin(t * 2.4 + i) * 0.12;
+    const ang = a0 + wob + wingAngle;
+    const len = (56 + i * 16) * wingStretch;
 
-  // 顔ベース（ピンクのグラデ）
-  let g = ctx.createRadialGradient(0,-8,8, 0,8,68);
-  g.addColorStop(0,'#ffe9f4'); g.addColorStop(0.45,'#ff9bc6'); g.addColorStop(1,'#ff5aa5');
-  ctx.fillStyle = g;
-  ctx.beginPath(); ctx.ellipse(0, 10, 54, 48, 0, 0, Math.PI*2); ctx.fill();
+    const ex = side * Math.cos(ang) * len;
+    const ey = Math.sin(ang) * len;
 
-  // 耳（外）
-  ctx.fillStyle = '#ff7fb7';
-  ctx.beginPath();
-  ctx.moveTo(-40,-4); ctx.quadraticCurveTo(-58,-28+earWig, -32,-36+earWig);
-  ctx.quadraticCurveTo(-22,-22+earWig, -28,-10+earWig); ctx.closePath(); ctx.fill();
-  ctx.beginPath();
-  ctx.moveTo(40,-4); ctx.quadraticCurveTo(58,-28-earWig, 32,-36-earWig);
-  ctx.quadraticCurveTo(22,-22-earWig, 28,-10-earWig); ctx.closePath(); ctx.fill();
+    const grd = ctx.createLinearGradient(0, 0, ex, ey);
+    grd.addColorStop(0, '#240000');
+    grd.addColorStop(1, '#5a0a0a');
+    ctx.strokeStyle = grd;
+    ctx.lineCap = 'round';
+    ctx.lineWidth = 6 - i * 1.2;
+    ctx.beginPath();
+    ctx.moveTo(0, 0);
+    ctx.lineTo(ex, ey);
+    ctx.stroke();
 
-  // 耳（内）
-  ctx.fillStyle = '#ffd0e6';
-  ctx.beginPath();
-  ctx.moveTo(-33,-8); ctx.quadraticCurveTo(-44,-26+earWig, -26,-30+earWig);
-  ctx.quadraticCurveTo(-18,-20+earWig, -22,-10+earWig); ctx.closePath(); ctx.fill();
-  ctx.beginPath();
-  ctx.moveTo(33,-8); ctx.quadraticCurveTo(44,-26-earWig, 26,-30-earWig);
-  ctx.quadraticCurveTo(18,-20-earWig, 22,-10-earWig); ctx.closePath(); ctx.fill();
+    spines.push({ x: ex, y: ey });
+  }
 
-  // ほっぺ
-  ctx.fillStyle = 'rgba(255,255,255,0.95)';
-  ctx.beginPath(); ctx.ellipse(-20, 20, 18, 14, 0, 0, Math.PI*2); ctx.fill();
-  ctx.beginPath(); ctx.ellipse( 20, 20, 18, 14, 0, 0, Math.PI*2); ctx.fill();
+  // 膜（スパイン間を結ぶ）
+  ctx.save();
+  ctx.globalAlpha = 0.72;
+  for (let i = 0; i < spines.length - 1; i++) {
+    const p0 = { x: 0, y: 0 };
+    const p1 = spines[i];
+    const p2 = spines[i + 1];
 
-  // マズル（白）
-  ctx.beginPath();
-  ctx.moveTo(-28, 26); ctx.quadraticCurveTo(0, 6, 28, 26);
-  ctx.quadraticCurveTo(10, 36, 0, 36);
-  ctx.quadraticCurveTo(-10, 36, -28, 26); ctx.closePath(); ctx.fill();
+    const mg = ctx.createLinearGradient(p0.x, p0.y, p1.x, p1.y);
+    mg.addColorStop(0, 'rgba(120, 0, 0, 0.9)');
+    mg.addColorStop(1, 'rgba(20, 0, 0, 0.95)');
+    ctx.fillStyle   = mg;
+    ctx.strokeStyle = 'rgba(255, 30, 30, 0.15)';
+    ctx.lineWidth   = 1.2;
 
-  // 目
-  const eye = (ex)=>{
-    ctx.save(); ctx.translate(ex, 2); ctx.scale(1, blink);
-    ctx.fillStyle = '#fff';
-    ctx.beginPath(); ctx.ellipse(0, 0, 16, 12, 0, 0, Math.PI*2); ctx.fill();
-    let ig = ctx.createRadialGradient(-3,-3,2, 0,0,12);
-    ig.addColorStop(0,'#ff7fb7'); ig.addColorStop(1,'#7a0d3a');
-    ctx.fillStyle = ig; ctx.beginPath(); ctx.ellipse(0, 0, 9, 8, 0, 0, Math.PI*2); ctx.fill();
-    ctx.fillStyle = '#141014'; ctx.beginPath(); ctx.arc(0,0,4.2,0,Math.PI*2); ctx.fill();
-    ctx.fillStyle = '#fff'; ctx.beginPath(); ctx.arc(-2,-2,1.8,0,Math.PI*2); ctx.fill();
-    ctx.restore();
-  };
-  eye(-18); eye(18);
+    ctx.beginPath();
+    ctx.moveTo(p0.x, p0.y);
+    ctx.lineTo(p1.x, p1.y);
+    ctx.lineTo(p2.x, p2.y);
+    ctx.closePath();
+    ctx.fill();
+    ctx.stroke();
+  }
+  ctx.restore();
 
-  // ハート模様
-  ctx.fillStyle = '#ffb2d4';
-  ctx.beginPath();
-  ctx.moveTo(0,-6);
-  ctx.bezierCurveTo(-8,-16,-24,-6,0,12);
-  ctx.bezierCurveTo(24,-6,8,-16,0,-6);
-  ctx.fill();
-
-  // 鼻と口
-  ctx.fillStyle = '#2b0b1a'; ctx.beginPath(); ctx.arc(0, 24, 4.4, 0, Math.PI*2); ctx.fill();
-  ctx.lineWidth = 3; ctx.beginPath(); ctx.moveTo(-6, 28); ctx.quadraticCurveTo(0, 34, 6, 28); ctx.stroke();
+  // 膜の外縁トゲ
+  ctx.strokeStyle = 'rgba(180, 0, 0, 0.45)';
+  ctx.lineWidth   = 1.5;
+  for (let i = 0; i < spines.length - 1; i++) {
+    const a = spines[i], b = spines[i + 1];
+    const mx = (a.x + b.x) / 2;
+    const my = (a.y + b.y) / 2;
+    const vx = (b.y - a.y);
+    const vy = -(b.x - a.x);
+    const vlen = Math.hypot(vx, vy) || 1;
+    const nx = (vx / vlen) * 10 * wingStretch * (side === -1 ? 1 : -1);
+    const ny = (vy / vlen) * 10 * wingStretch;
+    ctx.beginPath();
+    ctx.moveTo(mx, my);
+    ctx.lineTo(mx + nx, my + ny);
+    ctx.stroke();
+  }
 
   ctx.restore();
 }
+
+// === Canvas: Pink Wolf (enemy) =========================================
+// === Canvas: Pink Wolf (enemy / 恐怖版：赤目＋長牙) ======================
+function drawPinkWolf(ctx, cx, cy, w=56, h=56, t=0){
+  ctx.save();
+  ctx.translate(cx, cy);
+  // 背面：悪魔の翼（ピンク狼）
+drawDevilWing(ctx, -44, 6, -1, t, 0.95);
+drawDevilWing(ctx,  44, 6,  1, t, 0.95);
+
+  ctx.scale(w/120, h/120);           // 基準 120x120
+  ctx.lineJoin = 'round';
+  ctx.lineCap  = 'round';
+
+  const blink  = 0.78 + 0.22*Math.abs(Math.sin(t*2.0)); // まばたき
+  const earWig = Math.sin(t*3.0)*3;
+
+  // 影（不気味な赤黒の後光）
+  ctx.save();
+  ctx.globalCompositeOperation = 'multiply';
+  const gShadow = ctx.createRadialGradient(0, 10, 24, 0, 10, 80);
+  gShadow.addColorStop(0, 'rgba(80,0,30,0.45)');
+  gShadow.addColorStop(1, 'rgba(0,0,0,0)');
+  ctx.fillStyle = gShadow;
+  ctx.beginPath(); ctx.arc(0, 10, 78, 0, Math.PI*2); ctx.fill();
+  ctx.restore();
+
+  // トゲ毛のシルエット
+  ctx.save();
+  ctx.fillStyle = '#7a0d3a';
+  for(let i=0;i<12;i++){
+    const a  = i*(Math.PI*2/12) + Math.sin(t*1.3+i)*0.08;
+    const r1 = 48, r2 = 60 + Math.sin(t*2+i)*4;
+    const ix = Math.cos(a)*r1, iy = 10 + Math.sin(a)*r1;
+    const ox = Math.cos(a)*r2, oy = 10 + Math.sin(a)*r2;
+    ctx.beginPath();
+    ctx.moveTo(ix, iy);
+    ctx.lineTo(ox + Math.cos(a+0.18)*6, oy + Math.sin(a+0.18)*6);
+    ctx.lineTo(ox + Math.cos(a-0.18)*6, oy + Math.sin(a-0.18)*6);
+    ctx.closePath();
+    ctx.fill();
+  }
+  ctx.restore();
+
+  // 顔ベース（濃ピンク→黒のグラデ）
+  let g = ctx.createRadialGradient(0,-6,6, 0,12,68);
+  g.addColorStop(0,'#ffb1cf');
+  g.addColorStop(0.45,'#ff5aa5');
+  g.addColorStop(1,'#320016');
+  ctx.fillStyle = g;
+  ctx.beginPath(); ctx.ellipse(0, 12, 56, 50, 0, 0, Math.PI*2); ctx.fill();
+
+  // 耳（外）
+  ctx.fillStyle = '#8f194a';
+  ctx.beginPath();
+  ctx.moveTo(-42,-2); ctx.quadraticCurveTo(-68,-32+earWig, -30,-42+earWig);
+  ctx.quadraticCurveTo(-20,-26+earWig, -28,-10+earWig); ctx.closePath(); ctx.fill();
+  ctx.beginPath();
+  ctx.moveTo( 42,-2); ctx.quadraticCurveTo( 68,-32-earWig,  30,-42-earWig);
+  ctx.quadraticCurveTo( 20,-26-earWig,  28,-10-earWig); ctx.closePath(); ctx.fill();
+
+  // 耳（内）
+  ctx.fillStyle = '#ff7fb7';
+  ctx.beginPath();
+  ctx.moveTo(-34,-8); ctx.quadraticCurveTo(-50,-28+earWig, -26,-32+earWig);
+  ctx.quadraticCurveTo(-18,-22+earWig, -22,-12+earWig); ctx.closePath(); ctx.fill();
+  ctx.beginPath();
+  ctx.moveTo(34,-8); ctx.quadraticCurveTo(50,-28-earWig, 26,-32-earWig);
+  ctx.quadraticCurveTo(18,-22-earWig, 22,-12-earWig); ctx.closePath(); ctx.fill();
+
+  // ほほ毛（白）
+  ctx.fillStyle = 'rgba(255,255,255,0.95)';
+  ctx.beginPath(); ctx.ellipse(-22, 24, 22, 16, 0, 0, Math.PI*2); ctx.fill();
+  ctx.beginPath(); ctx.ellipse( 22, 24, 22, 16, 0, 0, Math.PI*2); ctx.fill();
+
+  // 口（口腔を黒く）
+  ctx.fillStyle = '#1a0007';
+  ctx.beginPath();
+  ctx.moveTo(-28, 36);
+  ctx.quadraticCurveTo(0, 22, 28, 36);
+  ctx.quadraticCurveTo(0, 48, -28, 36);
+  ctx.closePath();
+  ctx.fill();
+
+  // マズル（白）
+  ctx.fillStyle = '#fff';
+  ctx.beginPath();
+  ctx.moveTo(-30, 28); ctx.quadraticCurveTo(0, 8, 30, 28);
+  ctx.quadraticCurveTo(12, 40, 0, 40);
+  ctx.quadraticCurveTo(-12, 40, -30, 28); ctx.closePath(); ctx.fill();
+
+  // 牙（長く鋭く）
+  const fang = (sx, sy, dir=1) => {
+    const L = 26 + Math.sin(t*5 + dir)*2;  // 長さに微振動
+    ctx.fillStyle = '#f4f4f4';
+    ctx.strokeStyle = '#5a0a0a';
+    ctx.lineWidth = 1.6;
+    ctx.beginPath();
+    ctx.moveTo(sx, sy);
+    ctx.lineTo(sx + dir*6, sy + 6);
+    ctx.lineTo(sx + dir*2, sy + L);
+    ctx.closePath();
+    ctx.fill(); ctx.stroke();
+
+    // 血のにじみ（先端）
+    const rg = ctx.createRadialGradient(sx+dir*2, sy+L-2, 0, sx+dir*2, sy+L-2, 6);
+    rg.addColorStop(0,'rgba(200,0,0,0.9)');
+    rg.addColorStop(1,'rgba(200,0,0,0)');
+    ctx.fillStyle = rg;
+    ctx.beginPath(); ctx.arc(sx+dir*2, sy+L-2, 6, 0, Math.PI*2); ctx.fill();
+  };
+  fang(-8, 36, -1);
+  fang( 8, 36, +1);
+
+  // 鼻
+  ctx.fillStyle = '#2b0b1a';
+  ctx.beginPath(); ctx.arc(0, 26, 4.6, 0, Math.PI*2); ctx.fill();
+
+  // 目（鋭い赤＋発光）
+  const drawEvilEye = (ex, rot) => {
+    ctx.save();
+    ctx.translate(ex, 6);
+    ctx.rotate(rot);
+    // 白目
+    ctx.fillStyle = '#fff';
+    ctx.beginPath(); ctx.ellipse(0, 0, 18, 11*blink, 0, 0, Math.PI*2); ctx.fill();
+    // 赤い輝き
+    const eg = ctx.createRadialGradient(0,0,0, 0,0,12);
+    eg.addColorStop(0,'#ffeded');
+    eg.addColorStop(0.4,'#ff6b6b');
+    eg.addColorStop(1,'#770000');
+    ctx.fillStyle = eg;
+    ctx.beginPath(); ctx.ellipse(0, 0, 9, 7.5*blink, 0, 0, Math.PI*2); ctx.fill();
+    // 縦長の黒い瞳孔（スリット）
+    ctx.fillStyle = '#140000';
+    ctx.beginPath(); ctx.ellipse(0, 0, 2.2, 6*blink, 0, 0, Math.PI*2); ctx.fill();
+    // 外光
+    ctx.shadowColor = 'rgba(255, 0, 0, 0.7)';
+    ctx.shadowBlur = 12;
+    ctx.globalAlpha = 0.6;
+    ctx.beginPath(); ctx.ellipse(0, 0, 18, 11*blink, 0, 0, Math.PI*2); ctx.strokeStyle='rgba(255,0,0,0.3)'; ctx.stroke();
+    ctx.restore();
+  };
+  drawEvilEye(-18, -0.15);
+  drawEvilEye( 18,  0.15);
+
+  ctx.restore();
+}
+
+
+// === Canvas: Black Wolf (boss / 恐怖版：赤目グロー＋極長牙) ==============
+function drawBlackWolf(ctx, cx, cy, w=56, h=56, t=0){
+  ctx.save();
+  ctx.translate(cx, cy);
+// 背面：悪魔の翼（黒狼）
+drawDevilWing(ctx, -46, 8, -1, t, 1.05);
+drawDevilWing(ctx,  46, 8,  1, t, 1.05);
+  ctx.scale(w/120, h/120);
+  ctx.lineJoin = 'round'; ctx.lineCap = 'round';
+
+  const blink  = 0.78 + 0.22*Math.abs(Math.sin(t*2.4));
+  const earWig = Math.sin(t*3.2)*3;
+
+  // 黒い頭部（縁を赤くにじませる）
+  let g = ctx.createRadialGradient(0,-8,8, 0,12,70);
+  g.addColorStop(0,'#383838');
+  g.addColorStop(0.5,'#161616');
+  g.addColorStop(1,'#000');
+  ctx.fillStyle = g;
+  ctx.beginPath(); ctx.ellipse(0, 10, 58, 52, 0, 0, Math.PI*2); ctx.fill();
+
+  // 周囲トゲ毛
+  ctx.save();
+  ctx.fillStyle = '#330008';
+  for(let i=0;i<14;i++){
+    const a = i*(Math.PI*2/14) + Math.sin(t*1.7+i)*0.1;
+    const r1=48, r2=66 + Math.sin(t*2+i)*5;
+    const ix = Math.cos(a)*r1, iy = 10 + Math.sin(a)*r1;
+    const ox = Math.cos(a)*r2, oy = 10 + Math.sin(a)*r2;
+    ctx.beginPath();
+    ctx.moveTo(ix,iy);
+    ctx.lineTo(ox + Math.cos(a+0.18)*6, oy + Math.sin(a+0.18)*6);
+    ctx.lineTo(ox + Math.cos(a-0.18)*6, oy + Math.sin(a-0.18)*6);
+    ctx.closePath();
+    ctx.fill();
+  }
+  ctx.restore();
+
+  // 耳
+  ctx.fillStyle = '#2a2a2a';
+  ctx.beginPath();
+  ctx.moveTo(-44,0); ctx.quadraticCurveTo(-68,-32+earWig, -30,-42+earWig);
+  ctx.quadraticCurveTo(-20,-24+earWig, -28,-8+earWig); ctx.closePath(); ctx.fill();
+  ctx.beginPath();
+  ctx.moveTo( 44,0); ctx.quadraticCurveTo( 68,-32-earWig,  30,-42-earWig);
+  ctx.quadraticCurveTo( 20,-24-earWig,  28,-8-earWig); ctx.closePath(); ctx.fill();
+
+  // 頬の毛
+  ctx.fillStyle = '#c7c7c7';
+  ctx.beginPath(); ctx.ellipse(-24, 22, 22, 16, 0, 0, Math.PI*2); ctx.fill();
+  ctx.beginPath(); ctx.ellipse( 24, 22, 22, 16, 0, 0, Math.PI*2); ctx.fill();
+
+  // 口腔（黒）
+  ctx.fillStyle = '#070003';
+  ctx.beginPath();
+  ctx.moveTo(-32, 34); ctx.quadraticCurveTo(0, 18, 32, 34);
+  ctx.quadraticCurveTo(0, 52, -32, 34);
+  ctx.closePath(); ctx.fill();
+
+  // マズル（灰白）
+  ctx.fillStyle = '#eaeaea';
+  ctx.beginPath();
+  ctx.moveTo(-32, 26); ctx.quadraticCurveTo(0, 6, 32, 26);
+  ctx.quadraticCurveTo(12, 40, 0, 40);
+  ctx.quadraticCurveTo(-12, 40, -32, 26); ctx.closePath();
+  ctx.fill();
+
+  // 牙（極長）
+  const fang = (sx, sy, dir=1) => {
+    const L = 30 + Math.sin(t*4 + dir)*2.5;
+    ctx.fillStyle = '#f1f1f1';
+    ctx.strokeStyle = '#3a0a0a';
+    ctx.lineWidth = 1.8;
+    ctx.beginPath();
+    ctx.moveTo(sx, sy);
+    ctx.lineTo(sx + dir*7, sy + 7);
+    ctx.lineTo(sx + dir*2, sy + L);
+    ctx.closePath();
+    ctx.fill(); ctx.stroke();
+
+    // 赤い先端グロー
+    const rg = ctx.createRadialGradient(sx+dir*2, sy+L-3, 0, sx+dir*2, sy+L-3, 7);
+    rg.addColorStop(0,'rgba(255,0,0,0.95)');
+    rg.addColorStop(1,'rgba(255,0,0,0)');
+    ctx.fillStyle = rg;
+    ctx.beginPath(); ctx.arc(sx+dir*2, sy+L-3, 7, 0, Math.PI*2); ctx.fill();
+  };
+  fang(-10, 34, -1);
+  fang( 10, 34, +1);
+
+  // 鼻
+  ctx.fillStyle = '#151515';
+  ctx.beginPath(); ctx.arc(0, 26, 5, 0, Math.PI*2); ctx.fill();
+
+  // 目（赤いグロー＋縦スリット）
+  const drawEvilEye = (ex, rot) => {
+    ctx.save();
+    ctx.translate(ex, 2);
+    ctx.rotate(rot);
+    ctx.fillStyle = '#fff';
+    ctx.beginPath(); ctx.ellipse(0, 0, 18, 10*blink, 0, 0, Math.PI*2); ctx.fill();
+
+    const eg = ctx.createRadialGradient(0,0,0, 0,0,12);
+    eg.addColorStop(0,'#ffecec');
+    eg.addColorStop(0.5,'#ff3434');
+    eg.addColorStop(1,'#4a0000');
+    ctx.fillStyle = eg;
+    ctx.beginPath(); ctx.ellipse(0, 0, 9, 7*blink, 0, 0, Math.PI*2); ctx.fill();
+
+    ctx.fillStyle = '#090000';
+    ctx.beginPath(); ctx.ellipse(0, 0, 2.4, 6.2*blink, 0, 0, Math.PI*2); ctx.fill();
+
+    // 外光で“ギラッ”
+    ctx.shadowColor = 'rgba(255,0,0,0.85)';
+    ctx.shadowBlur = 16;
+    ctx.globalAlpha = 0.7;
+    ctx.beginPath(); ctx.ellipse(0, 0, 18, 10*blink, 0, 0, Math.PI*2); ctx.strokeStyle='rgba(255,0,0,0.35)'; ctx.stroke();
+    ctx.restore();
+  };
+  drawEvilEye(-18, -0.18);
+  drawEvilEye( 18,  0.18);
+
+  ctx.restore();
+}
+
 
 
   // 敵クラス
@@ -1164,335 +1529,272 @@ function drawWordCard(vocab, centerX, top, cardW = 160, cardH = 110) {
   ctx.restore();
 }
 
+// === Canvas: Black Wolf (boss) =========================================
+function drawBlackWolf(ctx, cx, cy, w=56, h=56, t=0){
+  ctx.save();
+  ctx.translate(cx, cy);
+  ctx.scale(w/120, h/120);        // 基準 120x120
+  ctx.lineJoin = 'round'; ctx.lineCap = 'round';
+
+  const blink = 0.8 + 0.2*Math.abs(Math.sin(t*2.0));
+  const earWig = Math.sin(t*3.2)*3;
+
+  // 顔ベース（黒〜グレイ）
+  let g = ctx.createRadialGradient(0,-6,8, 0,10,66);
+  g.addColorStop(0,'#3c3c3c'); g.addColorStop(0.5,'#1e1e1e'); g.addColorStop(1,'#000');
+  ctx.fillStyle = g;
+  ctx.beginPath(); ctx.ellipse(0, 8, 56, 50, 0, 0, Math.PI*2); ctx.fill();
+
+  // 耳（外）
+  ctx.fillStyle = '#2a2a2a';
+  ctx.beginPath();
+  ctx.moveTo(-42,-2); ctx.quadraticCurveTo(-64,-30+earWig, -30,-40+earWig);
+  ctx.quadraticCurveTo(-22,-24+earWig, -28,-10+earWig); ctx.closePath(); ctx.fill();
+  ctx.beginPath();
+  ctx.moveTo( 42,-2); ctx.quadraticCurveTo( 64,-30-earWig,  30,-40-earWig);
+  ctx.quadraticCurveTo( 22,-24-earWig,  28,-10-earWig); ctx.closePath(); ctx.fill();
+
+  // 耳（内）
+  ctx.fillStyle = '#555';
+  ctx.beginPath();
+  ctx.moveTo(-34,-8); ctx.quadraticCurveTo(-50,-28+earWig, -26,-32+earWig);
+  ctx.quadraticCurveTo(-18,-22+earWig, -22,-12+earWig); ctx.closePath(); ctx.fill();
+  ctx.beginPath();
+  ctx.moveTo(34,-8); ctx.quadraticCurveTo(50,-28-earWig, 26,-32-earWig);
+  ctx.quadraticCurveTo(18,-22-earWig, 22,-12-earWig); ctx.closePath(); ctx.fill();
+
+  // ほほの毛束（明るめ）
+  ctx.fillStyle = '#bfbfbf';
+  ctx.beginPath(); ctx.ellipse(-22, 20, 20, 14, 0, 0, Math.PI*2); ctx.fill();
+  ctx.beginPath(); ctx.ellipse( 22, 20, 20, 14, 0, 0, Math.PI*2); ctx.fill();
+
+  // マズル（灰白）
+  ctx.fillStyle = '#e6e6e6';
+  ctx.beginPath();
+  ctx.moveTo(-30, 26); ctx.quadraticCurveTo(0, 8, 30, 26);
+  ctx.quadraticCurveTo(12, 38, 0, 38);
+  ctx.quadraticCurveTo(-12, 38, -30, 26); ctx.closePath(); ctx.fill();
+
+  // 目（鋭い赤）
+  const eye = (ex)=>{
+    ctx.save(); ctx.translate(ex, 0); ctx.scale(1, blink);
+    ctx.fillStyle = '#fff';
+    ctx.beginPath(); ctx.ellipse(0, 0, 16, 11, 0, 0, Math.PI*2); ctx.fill();
+    let ig = ctx.createRadialGradient(-3,-2,2, 0,0,12);
+    ig.addColorStop(0,'#ff8080'); ig.addColorStop(1,'#5a0000');
+    ctx.fillStyle = ig; ctx.beginPath(); ctx.ellipse(0, 0, 9, 7.5, 0, 0, Math.PI*2); ctx.fill();
+    ctx.fillStyle = '#111'; ctx.beginPath(); ctx.arc(0,0,4.2,0,Math.PI*2); ctx.fill();
+    ctx.fillStyle = '#fff'; ctx.beginPath(); ctx.arc(-2,-2,1.6,0,Math.PI*2); ctx.fill();
+    ctx.restore();
+  };
+  eye(-18); eye(18);
+
+  // 鼻・口
+  ctx.fillStyle = '#151515'; ctx.beginPath(); ctx.arc(0, 26, 4.6, 0, Math.PI*2); ctx.fill();
+  ctx.strokeStyle = '#222'; ctx.lineWidth = 3;
+  ctx.beginPath(); ctx.moveTo(-6, 30); ctx.quadraticCurveTo(0, 36, 6, 30); ctx.stroke();
+
+  // 襟足（とげ）
+  ctx.strokeStyle = '#555'; ctx.lineWidth = 2;
+  for(let i=0;i<6;i++){
+    const a = (-Math.PI/2) + (i-3)*0.18;
+    ctx.beginPath(); ctx.moveTo(0, 48);
+    ctx.lineTo(Math.cos(a)*26, 48 + Math.sin(a)*14);
+    ctx.stroke();
+  }
+  ctx.restore();
+}
 
 
     // ボス
     // ★★★ ここから Boss を全置換 ★★★
-    class Boss {
-    constructor() {
-        this.width  = 140;       // 少し大きめの胴体
-        this.height = 120;
-        this.x = canvas.width / 2 - this.width / 2;
-        this.y = 100;
-        this.speed = 4 * SPEED_MULT;
-        this.life = 10;
+   // === Boss: Black Wolf (emoji wine beams & contact damage) ==============
+class Boss {
+  constructor() {
+    // 主役キャラと同サイズ
+    const pw = (gameState.player?.width  ?? 50);
+    const ph = (gameState.player?.height ?? 40);
+    this.width  = pw;
+    this.height = ph;
 
-        // 移動関連
-        this.lastMoveChange = 0;
-        this.moveTarget = { x: this.x, y: this.y };
-        this.phase = Math.random() * Math.PI * 2;
+    this.x = canvas.width / 2 - this.width / 2;
+    this.y = canvas.height / 2 - this.height / 2;
 
-        // 単語
-        this.vocab = getRandomBossVocab();
-        bossVocabIndex++;
+    this.speed = 10 * SPEED_MULT;     // とても速い
+    this.life  = 10;
 
-        // === 攻撃サイクル ===
-        // 5秒攻撃（50発＝100msごと）→5秒休憩→…を繰り返す
-        this.attackDuration = 5000;
-        this.restDuration   = 5000;
-        this.cycleDuration  = this.attackDuration + this.restDuration;
-        this.shotInterval   = 100 / FIRE_RATE; // 値が大きくなって発射がゆっくりに
-        this.cycleStartTime = performance.now();
-        this.isAttacking    = true;   // 生成直後は攻撃フェーズから
-        this.prevAttacking  = true;
-        this.nextShotTime   = this.cycleStartTime; // フェーズ開始直後に撃ち始める
+    // 移動
+    this.lastMoveChange = 0;
+    this.moveTarget = { x: this.x, y: this.y };
+    this.phase = Math.random() * Math.PI * 2;
+
+    // 単語（従来仕様を踏襲）
+    this.vocab = getRandomBossVocab(); bossVocabIndex++;
+
+    // 接触ダメージ用CD
+    this.lastTouchTime = 0;
+    this.touchCooldown = 900; // ms
+
+    // ===== 攻撃タイムライン =====
+    // 1) spray(5s/80発) → 2) rest(3s) → 3) waves(10発×5) → 4) rest(3s) → 5) spray(5s)
+    this.phases = [
+      { type:'spray', duration:5000 },
+      { type:'rest',  duration:3000 },
+      { type:'waves', duration:2500 }, // 500ms×5回（実動は内部で管理）
+      { type:'rest',  duration:3000 },
+      { type:'spray', duration:5000 },
+    ];
+    this.phaseIndex = 0;
+    this.phaseStart = performance.now();
+    this._onEnterPhase(this.phases[0].type, this.phaseStart);
+  }
+
+  _onEnterPhase(type, now){
+    if (type === 'spray'){
+      // 5秒で80発 → 62.5ms間隔（FIRE_RATEで遅速補正）
+      this.sprayInterval = (5000/80) / FIRE_RATE;
+      this.nextShotTime  = now;
+    } else if (type === 'waves'){
+      this.waveIndex = 0;
+      this.nextWaveTime = now;             // 即1回目
+      this.waveInterval = 500 / FIRE_RATE; // 500msごと
     }
+  }
 
-    pickNewTarget() {
-        const padX = 40, padY = 60;
-        const w = canvas.width, h = canvas.height;
-        this.moveTarget.x = Math.random() * (w - this.width  - padX*2) + padX;
-        this.moveTarget.y = Math.random() * (h * 0.55 - this.height - padY*2) + padY;
-    }
+  pickNewTarget() {
+    const pad = 8;
+    this.moveTarget.x = Math.random() * (canvas.width  - this.width  - pad*2) + pad;
+    this.moveTarget.y = Math.random() * (canvas.height - this.height - pad*2) + pad;
+  }
 
-    update(now) {
-        // ---- 攻撃サイクル判定 ----
-        const tInCycle   = (now - this.cycleStartTime) % this.cycleDuration;
-        const attacking  = tInCycle < this.attackDuration;
-        const phaseStart = now - tInCycle; // 現在サイクルの開始時刻
-        const attackEnd  = phaseStart + this.attackDuration;
-
-        // フェーズ切り替え（休憩→攻撃 に入った瞬間に弾のスケジュールをリセット）
-        if (!this.prevAttacking && attacking) {
-        this.nextShotTime = phaseStart; // 攻撃フェーズ頭から100ms刻みで発射
-        }
-        this.prevAttacking = this.isAttacking;
-        this.isAttacking   = attacking;
-
-        // ---- 攻撃（攻撃フェーズ中のみ100ms間隔で発射。5秒で50発）----
-        if (attacking) {
-        while (now >= this.nextShotTime && this.nextShotTime < attackEnd) {
-            this.fireBeam();
-            this.nextShotTime += this.shotInterval;
-        }
-        }
-
-        // ---- 機動（休憩中も動く。止めたい場合は attacking のときだけ移動するようにしてね）----
-        if (now - this.lastMoveChange > 700) {
-        this.lastMoveChange = now;
-        this.pickNewTarget();
-        }
-        const dx = this.moveTarget.x - this.x;
-        const dy = this.moveTarget.y - this.y;
-        const d  = Math.hypot(dx, dy) || 1;
-        const vx = (dx / d) * this.speed;
-        const vy = (dy / d) * this.speed;
-        this.x += vx * (1 + Math.sin(now * 0.01  + this.phase) * 0.15) * dt;
-        this.y += vy * (1 + Math.cos(now * 0.012 + this.phase) * 0.15) * dt;
-
-        // 画面内に収める
-        this.x = Math.max(10, Math.min(this.x, canvas.width - this.width - 10));
-        this.y = Math.max(10, Math.min(this.y, canvas.height * 0.7 - this.height));
-    }
-
-    fireBeam() {
-        // プレイヤー狙いの赤い弾（少しばらける）
-        const cx = this.x + this.width/2;
-        const cy = this.y + this.height/2;
-        const px = gameState.player.x + gameState.player.width/2;
-        const py = gameState.player.y + gameState.player.height/2;
-        let dx = px - cx, dy = py - cy;
-        const dist = Math.hypot(dx, dy) || 1;
-        dx /= dist; dy /= dist;
-
-        const spread = (Math.random() - 0.5) * 0.22;
-        const angle  = Math.atan2(dy, dx) + spread;
-        const speed  = 12 * SPEED_MULT;
-
-        gameState.bossBeams.push({
-        x: cx, y: cy,
-        vx: Math.cos(angle) * speed,
-        vy: Math.sin(angle) * speed,
-        r: 8
-        });
-    }
-
-    nextWord() {
-        this.vocab = getRandomBossVocab();
-        bossVocabIndex++;
-    }
-
-    // Boss.draw だけ差し替え
-    draw() {
-    const now = performance.now();
-    const t  = now * 0.002 + this.phase;
+  _fireSprayShot(){
+    // 🍾/🍷のどちらか、ややばらけ
     const cx = this.x + this.width/2;
     const cy = this.y + this.height/2;
+    const px = gameState.player.x + gameState.player.width/2;
+    const py = gameState.player.y + gameState.player.height/2;
 
-    // ====== 悪魔の羽（背面・大きく激しく動く）======
-    // 強めのフラップ（角度＆伸縮が大きい）
-    const flap = Math.sin(t * 3.2);         // 振動数
-    const wingAngle = flap * 0.95;          // 角度の振れ（約±54°）
-    const wingStretch = 1 + Math.abs(flap) * 0.45; // 伸縮で“バサッ”感
+    let dx = px - cx, dy = py - cy; const d = Math.hypot(dx,dy) || 1; dx/=d; dy/=d;
+    const spread = (Math.random()-0.5) * 0.25;
+    const ang = Math.atan2(dy, dx) + spread;
+    const speed = 11 * SPEED_MULT;
 
-    const drawDemonWing = (side) => {
-        // side: -1=左 / +1=右（左右対称に反転）
-        const baseX = cx + side * (this.width * 0.36);
-        const baseY = cy - 10;
-
-        // スパイン（骨）を何本か放射状に
-        const spines = [];
-        const spineCount = 4; // 指の本数
-        for (let i = 0; i < spineCount; i++) {
-        // 各スパインの角度（外側ほど下向き）
-        const a0 = -0.15 - i * 0.35;              // ベース角
-        const wob = Math.sin(t * 2.4 + i) * 0.12; // わずかにうねる
-        const ang = a0 + wob + wingAngle;         // フラップ反映
-        const len = (64 + i * 18) * wingStretch;  // 外側ほど長い
-        const ex = baseX + side * Math.cos(ang) * len;
-        const ey = baseY + Math.sin(ang) * len;
-
-        // 骨（太い→細い）
-        const grd = ctx.createLinearGradient(baseX, baseY, ex, ey);
-        grd.addColorStop(0, '#240000');
-        grd.addColorStop(1, '#5a0a0a');
-        ctx.strokeStyle = grd;
-        ctx.lineCap = 'round';
-        ctx.lineWidth = 6 - i * 1.2;
-        ctx.beginPath();
-        ctx.moveTo(baseX, baseY);
-        ctx.lineTo(ex, ey);
-        ctx.stroke();
-
-        spines.push({ x: ex, y: ey });
-        }
-
-        // 膜（スパイン同士を三角～四角形で結び、悪魔っぽいギザギザ）
-        ctx.save();
-        ctx.globalAlpha = 0.72; // 透ける膜
-        for (let i = 0; i < spines.length; i++) {
-        const p0 = { x: baseX, y: baseY };
-        const p1 = spines[i];
-        const p2 = spines[Math.min(i + 1, spines.length - 1)];
-
-        // 暗赤～黒のグラデ膜
-        const mg = ctx.createLinearGradient(p0.x, p0.y, p1.x, p1.y);
-        mg.addColorStop(0, 'rgba(120, 0, 0, 0.9)');
-        mg.addColorStop(1, 'rgba(20, 0, 0, 0.95)');
-        ctx.fillStyle = mg;
-        ctx.strokeStyle = 'rgba(255, 30, 30, 0.15)';
-        ctx.lineWidth = 1.2;
-
-        ctx.beginPath();
-        ctx.moveTo(p0.x, p0.y);
-        ctx.lineTo(p1.x, p1.y);
-        ctx.lineTo(p2.x, p2.y);
-        ctx.closePath();
-        ctx.fill();
-        ctx.stroke();
-        }
-        ctx.restore();
-
-        // 膜の縁にトゲ（ギザギザ）
-        ctx.save();
-        ctx.strokeStyle = 'rgba(180, 0, 0, 0.45)';
-        ctx.lineWidth = 1.5;
-        for (let i = 0; i < spines.length - 1; i++) {
-        const a = spines[i], b = spines[i + 1];
-        const mx = (a.x + b.x) / 2;
-        const my = (a.y + b.y) / 2;
-        // 外側に小トゲ
-        const vx = (b.y - a.y);
-        const vy = -(b.x - a.x);
-        const vlen = Math.hypot(vx, vy) || 1;
-        const nx = (vx / vlen) * 10 * wingStretch * (side === -1 ? 1 : -1);
-        const ny = (vy / vlen) * 10 * wingStretch;
-        ctx.beginPath();
-        ctx.moveTo(mx, my);
-        ctx.lineTo(mx + nx, my + ny);
-        ctx.stroke();
-        }
-        ctx.restore();
-    };
-
-    // 羽は“背面”なので、本体を描く前に描画
-    ctx.save();
-    drawDemonWing(-1);
-    drawDemonWing(+1);
-    ctx.restore();
-
-    // ===== 蜘蛛っぽい不気味な本体（前回のまま） =====
-    ctx.save();
-    // 影
-    ctx.fillStyle = 'rgba(0,0,0,0.35)';
-    ctx.beginPath();
-    ctx.ellipse(cx, this.y + this.height + 10, this.width*0.45, 12, 0, 0, Math.PI*2);
-    ctx.fill();
-
-    // 腹部
-    let g = ctx.createRadialGradient(cx-10, cy-10, 6, cx, cy, this.width*0.6);
-    g.addColorStop(0, '#1a0f14');
-    g.addColorStop(0.6, '#0b0508');
-    g.addColorStop(1, '#000000');
-    ctx.fillStyle = g;
-    ctx.beginPath();
-    ctx.ellipse(cx, cy+8, this.width*0.45, this.height*0.42, 0, 0, Math.PI*2);
-    ctx.fill();
-
-    // 頭胸部
-    g = ctx.createRadialGradient(cx-6, cy-6, 4, cx+2, cy-2, this.width*0.28);
-    g.addColorStop(0, '#26151a');
-    g.addColorStop(1, '#040203');
-    ctx.fillStyle = g;
-    ctx.beginPath();
-    ctx.ellipse(cx, cy-18, this.width*0.28, this.height*0.22, 0, 0, Math.PI*2);
-    ctx.fill();
-
-    // 牙
-    ctx.fillStyle = '#e6e6e6';
-    const fangW = 8, fangH = 16;
-    ctx.beginPath();
-    ctx.moveTo(cx-10, cy-6);
-    ctx.lineTo(cx-10-fangW, cy-6+fangH);
-    ctx.lineTo(cx-10+fangW*0.3, cy-6+fangH*0.7);
-    ctx.closePath();
-    ctx.fill();
-    ctx.beginPath();
-    ctx.moveTo(cx+10, cy-6);
-    ctx.lineTo(cx+10+fangW, cy-6+fangH);
-    ctx.lineTo(cx+10-fangW*0.3, cy-6+fangH*0.7);
-    ctx.closePath();
-    ctx.fill();
-
-    // 赤い複眼
-    const eye = (ex, ey, r, a) => {
-        ctx.save();
-        ctx.globalAlpha = a;
-        const eg = ctx.createRadialGradient(ex-1, ey-1, 0, ex, ey, r*1.6);
-        eg.addColorStop(0, '#ff5555');
-        eg.addColorStop(0.6, '#990000');
-        eg.addColorStop(1, '#220000');
-        ctx.fillStyle = eg;
-        ctx.beginPath();
-        ctx.arc(ex, ey, r, 0, Math.PI*2);
-        ctx.fill();
-        ctx.restore();
-    };
-    const eyeR = 4;
-    const eyeLayout = [
-        [-18, -18], [-6, -20], [6, -20], [18, -18],
-        [-12, -10], [-4, -12], [4, -12], [12, -10],
-    ];
-    eyeLayout.forEach(([ox, oy], i) => {
-        const wob = Math.sin(t*3 + i) * 1.2;
-        eye(cx + ox + wob, cy + oy + wob*0.5, eyeR + (i%3===0?1:0), 0.9);
+    const emoji = Math.random() < 0.5 ? '🍾' : '🍷';
+    gameState.bossBeams.push({
+      kind:'wine', emoji,
+      x: cx-12, y: cy-12,
+      vx: Math.cos(ang)*speed,
+      vy: Math.sin(ang)*speed,
+      width:24, height:24
     });
+  }
 
-    // 脚（8本）
-    const drawLeg = (side, order) => {
-        const baseX = cx + side * (this.width*0.25);
-        const baseY = cy - 10 + order*6;
-        const segLen = 26 + order*3;
-        const bend1  = (Math.sin(t*2 + order*0.6 + side*0.8) * 0.35) + (side>0?0.2:-0.2);
-        const bend2  = (Math.cos(t*2.4 + order*0.8 + side*0.3) * 0.45) + (side>0?0.3:-0.3);
+  _fireWaveBurst(k){
+    // 10方向に一斉射。外向き（波ごとに速度↑＆角度を少し回す）
+    const cx = this.x + this.width/2;
+    const cy = this.y + this.height/2;
+    const baseAng = (k * 0.35);                 // 回転
+    const speed = (5 + k*1.6) * SPEED_MULT;     // 波ごとに速く
+    for(let i=0;i<10;i++){
+      const ang = baseAng + i*(Math.PI*2/10);
+      const emoji = Math.random()<0.6 ? '🍾' : '🍷';
+      gameState.bossBeams.push({
+        kind:'wine', emoji,
+        x: cx-12, y: cy-12,
+        vx: Math.cos(ang)*speed,
+        vy: Math.sin(ang)*speed,
+        width:24, height:24
+      });
+    }
+  }
 
-        const j1x = baseX + side * segLen * Math.cos(0.2 + bend1);
-        const j1y = baseY + segLen * Math.sin(0.2 + bend1);
-        const j2x = j1x   + side * segLen * Math.cos(0.7 + bend2);
-        const j2y = j1y   + segLen * Math.sin(0.7 + bend2);
-        const tipx= j2x   + side * (segLen*0.9) * Math.cos(1.1 + bend2*0.8);
-        const tipy= j2y   + (segLen*0.9) * Math.sin(1.1 + bend2*0.8);
+  _updatePhase(now){
+    const cur = this.phases[this.phaseIndex];
+    const elapsed = now - this.phaseStart;
 
-        ctx.strokeStyle = '#1b0f12';
-        ctx.lineWidth = 5;
-        ctx.lineCap = 'round';
-        ctx.beginPath();
-        ctx.moveTo(baseX, baseY);
-        ctx.lineTo(j1x, j1y);
-        ctx.lineTo(j2x, j2y);
-        ctx.lineTo(tipx, tipy);
-        ctx.stroke();
+    if (cur.type === 'spray'){
+      while (now >= this.nextShotTime && elapsed <= cur.duration){
+        this._fireSprayShot();
+        this.nextShotTime += this.sprayInterval;
+      }
+    } else if (cur.type === 'waves'){
+      // 10発×5回
+      while (this.waveIndex < 5 && now >= this.nextWaveTime){
+        this._fireWaveBurst(this.waveIndex);
+        this.waveIndex++;
+        this.nextWaveTime += this.waveInterval;
+      }
+    }
+    // フェーズ切り替え
+    if (elapsed >= cur.duration){
+      this.phaseIndex = (this.phaseIndex + 1) % this.phases.length;
+      this.phaseStart = now;
+      this._onEnterPhase(this.phases[this.phaseIndex].type, now);
+    }
+  }
 
-        ctx.strokeStyle = '#3a1f2a';
-        ctx.lineWidth = 2;
-        ctx.beginPath();
-        ctx.moveTo(baseX, baseY);
-        ctx.lineTo(j1x, j1y);
-        ctx.lineTo(j2x, j2y);
-        ctx.lineTo(tipx, tipy);
-        ctx.stroke();
-    };
-    for (let i = 0; i < 4; i++) { drawLeg(-1, i); drawLeg(+1, i); }
-    ctx.restore();
+  _contactDamage(now){
+    const p = gameState.player;
+    const hit =
+      p.x < this.x + this.width &&
+      p.x + p.width > this.x &&
+      p.y < this.y + this.height &&
+      p.y + p.height > this.y;
+    if (hit && (now - this.lastTouchTime > this.touchCooldown)){
+      this.lastTouchTime = now;
+      gameState.life--;
+      updateUI?.();
+      // ちょいエフェクト
+      gameState.explosions.push(new Explosion(
+        p.x + p.width/2, p.y - 16
+      ));
+    }
+  }
 
-    // ===== 単語カード（重ならないよう上に）=====
-    const cardTop = Math.max(10, this.y - this.height - 140);
+  update(now) {
+    // 攻撃サイクル
+    this._updatePhase(now);
+
+    // 移動（画面全体）
+    if (now - this.lastMoveChange > 400){ // 素早くターゲット変更
+      this.lastMoveChange = now;
+      this.pickNewTarget();
+    }
+    const dx = this.moveTarget.x - this.x;
+    const dy = this.moveTarget.y - this.y;
+    const d  = Math.hypot(dx, dy) || 1;
+    const vx = (dx/d) * this.speed;
+    const vy = (dy/d) * this.speed;
+    this.x += vx * dt;
+    this.y += vy * dt;
+
+    // 画面内に収める
+    const pad = 4;
+    this.x = Math.max(pad, Math.min(this.x, canvas.width  - this.width  - pad));
+    this.y = Math.max(pad, Math.min(this.y, canvas.height - this.height - pad));
+
+    // ボディ接触ダメージ
+    this._contactDamage(now);
+  }
+
+  nextWord(){
+    this.vocab = getRandomBossVocab();
+    bossVocabIndex++;
+  }
+
+  draw(){
+    const cx = this.x + this.width/2;
+    const cy = this.y + this.height/2;
+    const t  = (performance.now() + this.phase*1000) / 1000;
+
+    // 黒狼本体
+    drawBlackWolf(ctx, cx, cy, this.width, this.height, t);
+
+    // 単語カード（従来どおり）
+    const cardTop = Math.max(10, this.y - this.height - 120);
     drawWordCard(this.vocab, cx, cardTop, 180, 120);
-
-    // 休憩中のオーラ
-    if (!this.isAttacking) {
-        ctx.save();
-        ctx.globalAlpha = 0.25;
-        ctx.strokeStyle = 'rgba(120,0,0,0.7)';
-        ctx.lineWidth = 3;
-        ctx.beginPath();
-        ctx.ellipse(cx, cy+2, this.width*0.55, this.height*0.48, 0, 0, Math.PI*2);
-        ctx.stroke();
-        ctx.restore();
-    }
-    }
-
-    }
+  }
+}
 
 
         
@@ -1985,42 +2287,73 @@ function updateEnemyBeams() {
   });
 }
 
-    function updateBossBeams() {
-        const p = gameState.player;
-        gameState.bossBeams = gameState.bossBeams.filter(b => {
-            b.x += b.vx * dt; b.y += b.vy * dt;
+   // ★ ここから全置換：ボス弾（🍾🍷対応 & フォールバックで円弾もOK）
+function updateBossBeams() {
+  const p = gameState.player;
 
-            // 円（ビーム）と矩形（プレイヤー）の簡易当たり
-            const nearestX = Math.max(p.x, Math.min(b.x, p.x + p.width));
-            const nearestY = Math.max(p.y, Math.min(b.y, p.y + p.height));
-            const dist = Math.hypot(b.x - nearestX, b.y - nearestY);
+  gameState.bossBeams = gameState.bossBeams.filter(b => {
+    // 移動
+    b.x += (b.vx || 0) * dt;
+    b.y += (b.vy || 0) * dt;
 
-            if (dist <= b.r) {
-            gameState.explosions.push(new Explosion(p.x + p.width/2, p.y - 20));
-            gameState.life--;
-            updateUI();
-            return false;
-            }
+    // 当たり判定
+    let hit = false;
+    if (b.kind === 'wine' || b.emoji) {
+      // 🍾🍷は矩形AABB
+      const bw = b.width  || 24, bh = b.height || 24;
+      hit = (b.x < p.x + p.width &&
+             b.x + bw > p.x &&
+             b.y < p.y + p.height &&
+             b.y + bh > p.y);
+    } else {
+      // 円弾フォールバック（rが無ければ8）
+      const r = b.r || 8;
+      const nx = Math.max(p.x, Math.min(b.x, p.x + p.width));
+      const ny = Math.max(p.y, Math.min(b.y, p.y + p.height));
+      hit = Math.hypot(b.x - nx, b.y - ny) <= r;
+    }
 
-            return b.x > -40 && b.x < canvas.width + 40 && b.y > -40 && b.y < canvas.height + 40;
-        });
+    if (hit) {
+      gameState.explosions.push(new Explosion(p.x + p.width/2, p.y - 20));
+      gameState.life--;
+      updateUI?.();
+      return false; // ヒットで消滅
+    }
 
-        // 描画（赤い発光弾）
-        gameState.bossBeams.forEach(b => {
-            ctx.save();
-            ctx.shadowColor = 'rgba(255,40,40,0.9)';
-            ctx.shadowBlur = 18;
-            const g = ctx.createRadialGradient(b.x, b.y, 0, b.x, b.y, b.r);
-            g.addColorStop(0, '#fff5f5');
-            g.addColorStop(0.6, '#ff5555');
-            g.addColorStop(1, '#aa0000');
-            ctx.fillStyle = g;
-            ctx.beginPath();
-            ctx.arc(b.x, b.y, b.r, 0, Math.PI * 2);
-            ctx.fill();
-            ctx.restore();
-        });
-        }
+    // 画面外で消す
+    const m = 40;
+    return b.x > -m && b.x < canvas.width + m && b.y > -m && b.y < canvas.height + m;
+  });
+
+  // 描画
+  gameState.bossBeams.forEach(b => {
+    if (b.kind === 'wine' || b.emoji) {
+      // 🍾🍷の絵文字弾
+      ctx.save();
+      const size = Math.max(b.height || 24, 20);
+      ctx.font = `${size}px "Apple Color Emoji","Noto Color Emoji","Segoe UI Emoji",system-ui,sans-serif`;
+      ctx.textBaseline = 'top';
+      ctx.fillText(b.emoji || '🍾', b.x, b.y);
+      ctx.restore();
+    } else {
+      // 円弾（安全デフォルト半径）
+      const r = b.r || 8;
+      ctx.save();
+      ctx.shadowColor = 'rgba(255,40,40,0.9)';
+      ctx.shadowBlur = 18;
+      const g = ctx.createRadialGradient(b.x, b.y, 0, b.x, b.y, r);
+      g.addColorStop(0, '#fff5f5');
+      g.addColorStop(0.6, '#ff5555');
+      g.addColorStop(1, '#aa0000');
+      ctx.fillStyle = g;
+      ctx.beginPath();
+      ctx.arc(b.x, b.y, r, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.restore();
+    }
+  });
+}
+
         // ボスHPバー
         function drawBossHPBar() {
         if (!gameState.boss) return;
@@ -2446,7 +2779,7 @@ function updateEnemyBeams() {
             bossWarningActive: false,
             bossWarningStart: 0,
             bossPending: false,
-            bossTriggerScore: 500,
+            bossTriggerScore: 100,
             bossCleared: false,       // ← 重複を削除
             bossFinaleActive: false,
             bossFinaleStart: 0,
