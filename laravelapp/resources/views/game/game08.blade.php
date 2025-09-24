@@ -2330,116 +2330,64 @@ answerButtons.forEach(btn => {
     initStars();
     updateUI();
     gameLoop();
+
+(function(){
+  const container = document.querySelector('.game-container');
+
+  // ゲームの論理解像度（変えると当たり判定やレイアウトも変わる）
+  const BASE_W = 400, BASE_H = 800;
+
+  // PC と モバイル で倍率に上限を設ける（お好みで調整）
+  const DESKTOP_USER_SCALE = 0.5; // PC では半分表示
+  const MOBILE_MAX_SCALE   = 1.0; // モバイルは“等倍まで”（超拡大しない）
+
+  // モバイル判定（UAではなく入力特性で）
+  const isMobile = () =>
+    window.matchMedia('(hover: none) and (pointer: coarse)').matches;
+
+  // 実際の見えているビューポートを取得（iOS のアドレスバー縮みも追従）
+  function getViewport(){
+    const vv = window.visualViewport;
+    if (vv) return { w: vv.width, h: vv.height };
+    return { w: window.innerWidth, h: window.innerHeight };
+  }
+
+  // “contain（収まる）” 方式でフィット。必要なら “cover（満たす/一部はみ出し）” も可能。
+  const FIT_MODE = 'contain'; // 'contain' or 'cover'
+
+  function layout(){
+    const { w, h } = getViewport();
+
+    const fitContain = Math.min( w / BASE_W, h / BASE_H );
+    const fitCover   = Math.max( w / BASE_W, h / BASE_H );
+    const fitScale   = (FIT_MODE === 'cover') ? fitCover : fitContain;
+
+    // PC：大画面で巨大化しすぎないよう 1 を上限にし、さらに任意倍率を掛ける
+    // モバイル：画面いっぱい（等倍まで）にフィット
+    const base = isMobile() ? fitScale : Math.min(1, fitScale);
+    const user = isMobile() ? 1.0 : DESKTOP_USER_SCALE;
+    const s = Math.min(base * user, MOBILE_MAX_SCALE);
+
+    // 余白ぶんだけ平行移動して中央配置（サブピクセルぼけ回避のため丸め）
+    const tx = Math.round((w - BASE_W * s) / 2);
+    const ty = Math.round((h - BASE_H * s) / 2);
+
+    container.style.transform = `translate(${tx}px, ${ty}px) scale(${s})`;
+  }
+
+  // 画面サイズ変化や iOS のアドレスバー開閉に追従
+  window.addEventListener('resize', layout, { passive: true });
+  window.addEventListener('orientationchange', layout, { passive: true });
+  if (window.visualViewport) {
+    visualViewport.addEventListener('resize', layout, { passive: true });
+    visualViewport.addEventListener('scroll', layout, { passive: true });
+  }
+
+  // 初期実行
+  layout();
+})();
 </script>
-<script>
-(function(){
-  const container = document.querySelector('.game-container');
-  const BASE_W = 400, BASE_H = 800; // ゲームの論理解像度
 
-  // タッチ端末や狭幅を「モバイル」扱い
-  const isMobile = () =>
-    window.matchMedia('(hover: none) and (pointer: coarse), (max-width: 768px)').matches;
-
-  function layout(){
-   // 追加：好きな縮小率（1=等倍、0.8=80%表示）
-const USER_SCALE = 0.85;   // お好みで 0.7〜1.0 くらい
-
-function layout(){
-  const ww = window.innerWidth;
-  const wh = window.innerHeight;
-
-  const fitScale = Math.min(ww / BASE_W, wh / BASE_H);
-
-  // 元のスケール計算
-  const base = isMobile() ? fitScale : Math.min(1, fitScale);
-
-  // ここで小さくする
-  const s = base * USER_SCALE;
-
-  const tx = Math.round((ww - BASE_W * s) / 2);
-  const ty = Math.round((wh - BASE_H * s) / 2);
-
-  container.style.transform = `translate(${tx}px, ${ty}px) scale(${s})`;
-}
-  }
-
-  window.addEventListener('resize', layout, { passive: true });
-  window.addEventListener('orientationchange', layout);
-  window.addEventListener('DOMContentLoaded', layout);
-  window.addEventListener('load', layout);
-})();
-
-(function(){
-  const container = document.querySelector('.game-container');
-  const BASE_W = 400, BASE_H = 800; // ゲームの論理解像度
-
-  // タッチ端末や狭幅を「モバイル」扱い
-  const isMobile = () =>
-    window.matchMedia('(hover: none) and (pointer: coarse), (max-width: 768px)').matches;
-
-  function layout(){
-   // 追加：好きな縮小率（1=等倍、0.8=80%表示）
-const USER_SCALE = 0.85;   // お好みで 0.7〜1.0 くらい
-
-function layout(){
-  const ww = window.innerWidth;
-  const wh = window.innerHeight;
-
-  const fitScale = Math.min(ww / BASE_W, wh / BASE_H);
-
-  // 元のスケール計算
-  const base = isMobile() ? fitScale : Math.min(1, fitScale);
-
-  // ここで小さくする
-  const s = base * USER_SCALE;
-
-  const tx = Math.round((ww - BASE_W * s) / 2);
-  const ty = Math.round((wh - BASE_H * s) / 2);
-
-  container.style.transform = `translate(${tx}px, ${ty}px) scale(${s})`;
-}
-  }
-
-  window.addEventListener('resize', layout, { passive: true });
-  window.addEventListener('orientationchange', layout);
-  window.addEventListener('DOMContentLoaded', layout);
-  window.addEventListener('load', layout);
-})();
-
-  (function(){
-    const container = document.querySelector('.game-container');
-    const BASE_W = 400, BASE_H = 800;
-  
-    // ★ 追加：表示を任意に縮小する係数（0.5 = 50%）
-    const USER_SCALE = 0.5;
-  
-    const isMobile = () =>
-      window.matchMedia('(hover: none) and (pointer: coarse), (max-width: 768px)').matches;
-  
-    function layout(){
-      const ww = window.innerWidth;
-      const wh = window.innerHeight;
-  
-      const fitScale = Math.min(ww / BASE_W, wh / BASE_H);
-  
-      // 元のスケール計算
-      const base = isMobile() ? fitScale : Math.min(1, fitScale);
-  
-      // ★ ここで「半分」にする
-      const s = base * USER_SCALE;
-  
-      const tx = Math.round((ww - BASE_W * s) / 2);
-      const ty = Math.round((wh - BASE_H * s) / 2);
-  
-      container.style.transform = `translate(${tx}px, ${ty}px) scale(${s})`;
-    }
-  
-    window.addEventListener('resize', layout, { passive: true });
-    window.addEventListener('orientationchange', layout);
-    window.addEventListener('DOMContentLoaded', layout);
-    window.addEventListener('load', layout);
-  })();
-  </script>
 </body>
 </html>
 
