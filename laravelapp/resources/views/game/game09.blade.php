@@ -1559,14 +1559,13 @@ class Boss {
 
     this.phaseIndex = 0;
     this.phases = [
-  { type:'rainbow', duration: 5000 },       // 1. レインボー光線（1発出す）
-  { type:'rest',    duration: BOSS_REST5 }, // 2. 休憩 5秒
-  { type:'shadow',  duration: BOSS_SHADOW_TIME }, // 3. シャドー 3発/秒 × 5秒
-  { type:'rest',    duration: BOSS_REST5 }, // 4. 休憩 5秒
-  { type:'waves',   duration: BOSS_WAVE_TIME },   // 5. 波状：毎秒10発 × 5秒
-  { type:'rest',    duration: BOSS_REST5 }, // 6. 休憩 5秒
-  { type:'ring360', duration: 1000 },       // 7. 360°ミサイル（同時5方向、1秒）
-  { type:'rest',    duration: BOSS_REST5 }, // 8. 休憩 5秒 → 先頭へ
+  { type:'rainbow', duration: 5000 },       // 1. レインボー（消えない）
+  { type:'rest',    duration: BOSS_REST5 }, // 2. 休憩 5s
+  { type:'shadow',  duration: BOSS_SHADOW_TIME }, // 3. 黒シャドー 5s
+  { type:'rest',    duration: BOSS_REST5 }, // 4. 休憩 5s
+  { type:'waves',   duration: BOSS_WAVE_TIME },   // 5. 波状 5s
+  { type:'laser',   duration: 1000 },       // 6. 紫レーザー（直線）：1秒間30発
+  { type:'rest',    duration: BOSS_REST5 }, // 7. 休憩 5s → 1へ
 ];
 
     this.phaseStart = performance.now();
@@ -1582,43 +1581,54 @@ class Boss {
 
   _onEnterPhase(type, now){
   if (type === 'shadow'){
-    // ★ 3発/秒
     this.shadowInterval = (1000 / BOSS_SHADOW_RATE) / FIRE_RATE;
     this.nextShadowTime = now;
 
   } else if (type === 'waves'){
-    // 毎秒リング（10発）を5秒間
-    this.nextWaveTime = now;
     this.waveInterval = 1000 / FIRE_RATE;
+    this.nextWaveTime = now;
 
   } else if (type === 'rainbow'){
-  const hasOne = gameState.bossBeams.some(b => b.type === 'rainbow');
-  if (!hasOne){
-    const cx = this.x + this.width/2, cy = this.y + this.height/2;
-    gameState.bossBeams.push({
-      type:'rainbow', x:cx, y:cy, r:12,
-      vx: 0, vy: 0,
-      // 追尾パラメータ（速さはここで調整）
-      seek:{ strength: 0.3 * SPEED_MULT, maxSpeed: 15 * SPEED_MULT },
-      hue0: Math.floor(Math.random()*360)
-    });
-  }
-
-
-
-  } else if (type === 'ring360'){
-    // 360°同時に5方向（1回）＝「1秒間に5発」のイメージ
-    const cx = this.x + this.width/2, cy = this.y + this.height/2;
-    for (let i=0;i<5;i++){
-      const ang = (i/5) * Math.PI*2;
-      const spd = 7 * SPEED_MULT;
+    const hasOne = gameState.bossBeams.some(b => b.type === 'rainbow');
+    if (!hasOne){
+      const cx = this.x + this.width/2, cy = this.y + this.height/2;
       gameState.bossBeams.push({
-        type:'ring', x:cx, y:cy, r:8,
-        vx: Math.cos(ang)*spd, vy: Math.sin(ang)*spd
+        type:'rainbow', x:cx, y:cy, r:12,
+        vx:0, vy:0,
+        seek:{ strength: 0.3 * SPEED_MULT, maxSpeed: 15 * SPEED_MULT },
+        hue0: Math.floor(Math.random()*360)
       });
     }
+
+  } else if (type === 'laser'){
+    // 1秒間30発、FIRE_RATE補正あり
+    this.laserInterval = (1000 / 30) / FIRE_RATE;
+    this.nextLaserTime = now;
+
+  } else if (type === 'rest'){
+    // 何もしない（クールダウン）
+
+  } else if (type === 'ring360'){
+    // 使わないなら削除してOK（残すならここで1回だけ撃つなど）
   }
 }
+
+
+_fireLaserBeam(){
+  const cx = this.x + this.width/2;
+  const headY = this.y + this.height;
+
+  const w = 28, h = 140;           // 巨大感
+  const spd = 20 * SPEED_MULT;     // 直進スピード（下方向＝正面）
+
+  gameState.bossBeams.push({
+    type:'laser',
+    x: cx - w/2, y: headY - 10,    // ボスの正面から
+    w, h,
+    vx: 0, vy: spd
+  });
+}
+
 
 _onExitPhase(type){
   // ★ レインボー弾は“ヒットするまで残す”ので、ここでは何もしない
@@ -1648,27 +1658,37 @@ _onExitPhase(type){
   }
 
   _updatePhase(now){
-    const cur = this.phases[this.phaseIndex];
-    const elapsed = now - this.phaseStart;
+  const cur = this.phases[this.phaseIndex];
+  const elapsed = now - this.phaseStart;
 
-    if (cur.type === 'shadow'){
-      while (now >= this.nextShadowTime && elapsed <= cur.duration){
-        this._fireShadowBall();
-        this.nextShadowTime += this.shadowInterval;
-      }
-    } else if (cur.type === 'waves'){
-      if (now >= this.nextWaveTime && elapsed <= cur.duration){
-        this._fireWaveRing();
-        this.nextWaveTime += this.waveInterval;
-      }
+  if (cur.type === 'shadow'){
+    while (now >= this.nextShadowTime && elapsed <= cur.duration){
+      this._fireShadowBall();
+      this.nextShadowTime += this.shadowInterval;
     }
-    if (elapsed >= cur.duration){
-      this._onExitPhase(cur.type);
-      this.phaseIndex = (this.phaseIndex + 1) % this.phases.length;
-      this.phaseStart = now;
-      this._onEnterPhase(this.phases[this.phaseIndex].type, now);
+
+  } else if (cur.type === 'waves'){
+    if (now >= this.nextWaveTime && elapsed <= cur.duration){
+      this._fireWaveRing();
+      this.nextWaveTime += this.waveInterval;
+    }
+
+  } else if (cur.type === 'laser'){
+    while (now >= this.nextLaserTime && elapsed <= cur.duration){
+      this._fireLaserBeam();
+      this.nextLaserTime += this.laserInterval;
     }
   }
+
+  // フェーズ終了判定（共通）
+  if (elapsed >= cur.duration){
+    this._onExitPhase(cur.type);
+    this.phaseIndex = (this.phaseIndex + 1) % this.phases.length;
+    this.phaseStart = now;
+    this._onEnterPhase(this.phases[this.phaseIndex].type, now);
+  }
+}
+
 
   _contactDamage(now){
     const p = gameState.player;
@@ -2235,9 +2255,14 @@ function updateBossBeams(){
       if (sp > cap){ b.vx = b.vx/sp*cap; b.vy = b.vy/sp*cap; }
     }
 
-    // 移動
+    // 移動（円弾＝中心座標／レーザー＝矩形左上）
     b.x += (b.vx||0) * dt;
     b.y += (b.vy||0) * dt;
+
+    // レーザーの寿命（任意）
+    if (b.type === 'laser' && Number.isFinite(b.until) && now > b.until) {
+      return false;
+    }
 
     // 跳ね返り（シャドー：円）
     if (b.type === 'shadow'){
@@ -2249,39 +2274,76 @@ function updateBossBeams(){
       if ((b.bounces||0) >= (b.maxBounces||5)) return false;
     }
 
-    // 当たり判定（円 vs 矩形）
-const r = b.r || 8;
-const nx = Math.max(p.x, Math.min(b.x, p.x + p.width));
-const ny = Math.max(p.y, Math.min(b.y, p.y + p.height));
-const hit = Math.hypot(b.x - nx, b.y - ny) <= r;
+    // ── 当たり判定 ─────────────────────────────────
+    let hit = false;
 
-if (hit){
-  gameState.explosions.push(new Explosion(p.x + p.width/2, p.y - 20));
-  gameState.life--; updateUI?.();
+    if (b.type === 'laser'){
+      // 矩形 vs 矩形（レーザーは太い長方形）
+      const rx = b.x, ry = b.y, rw = b.w||0, rh = b.h||0;
+      hit = !(rx + rw < p.x || rx > p.x + p.width || ry + rh < p.y || ry > p.y + p.height);
+    } else {
+      // 円 vs 矩形（既存：shadow, wave, rainbow, ring）
+      const r = b.r || 8;
+      const nx = Math.max(p.x, Math.min(b.x, p.x + p.width));
+      const ny = Math.max(p.y, Math.min(b.y, p.y + p.height));
+      hit = Math.hypot(b.x - nx, b.y - ny) <= r;
+    }
 
-  if (b.type === 'rainbow'){
-    gameState.controlsInverted = true;
-    gameState.invertUntil = now + RAINBOW_INVERT_MS;
-    gameState.messages.push(new FloatingMessage(
-      p.x + p.width/2, p.y - 24, "CONFUSED!", "#88f"
-    ));
-  }
-  return false; // ← 当たった弾は消える（rainbow含む）
-}
+    if (hit){
+      gameState.explosions.push(new Explosion(p.x + p.width/2, p.y - 20));
+      gameState.life--; updateUI?.();
 
+      if (b.type === 'rainbow'){
+        gameState.controlsInverted = true;
+        gameState.invertUntil = now + RAINBOW_INVERT_MS;
+        gameState.messages.push(new FloatingMessage(
+          p.x + p.width/2, p.y - 24, "CONFUSED!", "#88f"
+        ));
+      }
+      return false; // 当たった弾は消滅（レーザーも同様に1ヒットで消す）
+    }
 
-    // 画面外（跳ね返らない弾）は破棄
-   // 画面外（跳ね返らない弾）は破棄
-if (b.type !== 'shadow' && b.type !== 'rainbow'){  // ← rainbowを除外
-  const m = 40;
-  if (b.x < -m || b.x > canvas.width + m || b.y < -m || b.y > canvas.height + m) return false;
-}
+    // 画面外で破棄（shadowはバウンド、rainbowは“当たるまで消えない”）
+    if (b.type !== 'shadow' && b.type !== 'rainbow'){
+      const m = 60;
+      if (b.x < -m || b.x > canvas.width + m || b.y < -m || b.y > canvas.height + m) return false;
+    }
 
     return true;
   });
 
-  // 描画
+  // ── 描画 ────────────────────────────────────────
   gameState.bossBeams.forEach(b => {
+    // レーザー（巨大な紫の直線）
+    if (b.type === 'laser'){
+      const x = b.x, y = b.y, w = b.w||0, h = b.h||0;
+
+      // 外側グロー
+      ctx.save();
+      ctx.shadowColor = 'rgba(160, 60, 255, 0.95)';
+      ctx.shadowBlur  = 24;
+
+      // 本体（紫グラデ：上下で変化）
+      const g = ctx.createLinearGradient(x, y, x, y + h);
+      g.addColorStop(0.00, 'rgba(210,170,255,0.95)');
+      g.addColorStop(0.25, 'rgba(168, 80,255,0.98)');
+      g.addColorStop(0.50, 'rgba(255,255,255,0.98)'); // 白いコア
+      g.addColorStop(0.75, 'rgba(168, 80,255,0.98)');
+      g.addColorStop(1.00, 'rgba(110, 40,200,0.95)');
+      ctx.fillStyle = g;
+      ctx.fillRect(x, y, w, h);
+
+      // さらに細い芯（白）
+      const coreW = Math.max(4, w * 0.35);
+      const cx = x + (w - coreW)/2;
+      ctx.fillStyle = 'rgba(255,255,255,0.9)';
+      ctx.fillRect(cx, y + 3, coreW, Math.max(0, h - 6));
+
+      ctx.restore();
+      return; // ← レーザーはここで終了（下の円弾描画はスキップ）
+    }
+
+    // 円弾（shadow, wave, rainbow, ring）
     const r = b.r || 8;
     let g;
     if (b.type === 'shadow'){
@@ -2296,7 +2358,7 @@ if (b.type !== 'shadow' && b.type !== 'rainbow'){  // ← rainbowを除外
       g.addColorStop(0,  `hsla(${hue},100%,95%,1)`);
       g.addColorStop(0.5,`hsla(${hue},100%,60%,1)`);
       g.addColorStop(1,  `hsla(${(hue+60)%360},100%,45%,1)`);
-    } else { // ring360
+    } else { // ring360 など
       g = ctx.createRadialGradient(b.x, b.y, 0, b.x, b.y, r);
       g.addColorStop(0,'#fff5e6'); g.addColorStop(0.6,'#ffb347'); g.addColorStop(1,'#ff7f27');
     }
@@ -2310,6 +2372,7 @@ if (b.type !== 'shadow' && b.type !== 'rainbow'){  // ← rainbowを除外
     ctx.restore();
   });
 }
+
 
 function updatePlayer(){
   const p = gameState.player;
