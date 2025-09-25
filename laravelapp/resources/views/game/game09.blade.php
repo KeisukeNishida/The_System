@@ -646,7 +646,7 @@ body{
 
         // ゲーム状態
         let gameState = {
-            life: 3,
+            life: 100,
             score: 0,
             gameRunning: true,
             enemies: [],
@@ -1552,20 +1552,21 @@ class Boss {
     this.width = pw; this.height = ph;
     this.x = canvas.width/2 - this.width/2;
     this.y = canvas.height/2 - this.height/2;
-    this.speed = 10 * SPEED_MULT;
+    this.speed = 15 * SPEED_MULT;
     this.life  = 10;
 
     this.vocab = getRandomBossVocab();
 
     this.phaseIndex = 0;
-    this.phases = [
-  { type:'rainbow', duration: 5000 },       // 1. レインボー（消えない）
-  { type:'rest',    duration: BOSS_REST5 }, // 2. 休憩 5s
-  { type:'shadow',  duration: BOSS_SHADOW_TIME }, // 3. 黒シャドー 5s
-  { type:'rest',    duration: BOSS_REST5 }, // 4. 休憩 5s
-  { type:'waves',   duration: BOSS_WAVE_TIME },   // 5. 波状 5s
-  { type:'laser',   duration: 5000 },       // 6. 紫レーザー（直線）：1秒間30発
-  { type:'rest',    duration: BOSS_REST5 }, // 7. 休憩 5s → 1へ
+    // Boss.constructor 内
+this.phases = [
+  { type:'rainbow', duration: 5000 },
+  { type:'rest',    duration: BOSS_REST5 },
+  { type:'shadow',  duration: BOSS_SHADOW_TIME },
+  { type:'rest',    duration: BOSS_REST5 },
+  { type:'waves',   duration: BOSS_WAVE_TIME },
+  { type:'laser',   duration: 5000 },   // ← 5秒
+  { type:'rest',    duration: BOSS_REST5 },
 ];
 
     this.phaseStart = performance.now();
@@ -1578,22 +1579,59 @@ class Boss {
     this.moveTarget = {x:this.x, y:this.y};
   }
   
+// Boss クラス内に追加
+_fireLaserBurst4(){
+  const now = performance.now();
+  const cx = this.x + this.width/2;
+  const cy = this.y + this.height/2;
 
-  _onEnterPhase(type, now){
+  const spd = 20 * SPEED_MULT;
+  const life = 1200;          // 1.2秒で自然消滅（画面外でも消える）
+  const end  = now + life;
+
+  // 縦レーザー（上下）
+  const vw = 28, vh = 140;
+  // 上
+  gameState.bossBeams.push({
+    type:'laser', x: cx - vw/2, y: this.y - vh + 4, w: vw, h: vh,
+    vx: 0, vy: -spd, until: end
+  });
+  // 下
+  gameState.bossBeams.push({
+    type:'laser', x: cx - vw/2, y: this.y + this.height - 4, w: vw, h: vh,
+    vx: 0, vy: spd, until: end
+  });
+
+  // 横レーザー（左右）
+  const hw = 140, hh = 28;
+  // 左
+  gameState.bossBeams.push({
+    type:'laser', x: this.x - hw + 4, y: cy - hh/2, w: hw, h: hh,
+    vx: -spd, vy: 0, until: end
+  });
+  // 右
+  gameState.bossBeams.push({
+    type:'laser', x: this.x + this.width - 4, y: cy - hh/2, w: hw, h: hh,
+    vx: spd, vy: 0, until: end
+  });
+}
+
+_onEnterPhase(type, now){
   if (type === 'shadow'){
     this.shadowInterval = (1000 / BOSS_SHADOW_RATE) / FIRE_RATE;
     this.nextShadowTime = now;
 
   } else if (type === 'waves'){
-    this.waveInterval = 1000 / FIRE_RATE;
+    this.waveInterval = 1000 / FIRE_RATE; // 毎秒1リング
     this.nextWaveTime = now;
 
   } else if (type === 'rainbow'){
+    // フィールドに1発も無ければ生成（“当たるまで消えない”）
     const hasOne = gameState.bossBeams.some(b => b.type === 'rainbow');
     if (!hasOne){
       const cx = this.x + this.width/2, cy = this.y + this.height/2;
       gameState.bossBeams.push({
-        type:'rainbow', x:cx, y:cy, r:60,
+        type:'rainbow', x:cx, y:cy, r:12*3,            // ← 3倍サイズ
         vx:0, vy:0,
         seek:{ strength: 0.3 * SPEED_MULT, maxSpeed: 15 * SPEED_MULT },
         hue0: Math.floor(Math.random()*360)
@@ -1601,15 +1639,9 @@ class Boss {
     }
 
   } else if (type === 'laser'){
-    // 1秒間30発、FIRE_RATE補正あり
-    this.laserInterval = (1000 / 30) / FIRE_RATE;
+    // 1秒間30発（= 33.33ms間隔）で5秒間
+    this.laserInterval = (1000/30) / FIRE_RATE;
     this.nextLaserTime = now;
-
-  } else if (type === 'rest'){
-    // 何もしない（クールダウン）
-
-  } else if (type === 'ring360'){
-    // 使わないなら削除してOK（残すならここで1回だけ撃つなど）
   }
 }
 
@@ -1666,21 +1698,18 @@ _onExitPhase(type){
       this._fireShadowBall();
       this.nextShadowTime += this.shadowInterval;
     }
-
   } else if (cur.type === 'waves'){
-    if (now >= this.nextWaveTime && elapsed <= cur.duration){
+    while (now >= this.nextWaveTime && elapsed <= cur.duration){
       this._fireWaveRing();
       this.nextWaveTime += this.waveInterval;
     }
-
   } else if (cur.type === 'laser'){
     while (now >= this.nextLaserTime && elapsed <= cur.duration){
-      this._fireLaserBeam();
+      this._fireLaserBurst4();                // ← 4方向 まとめて1“発”
       this.nextLaserTime += this.laserInterval;
     }
   }
 
-  // フェーズ終了判定（共通）
   if (elapsed >= cur.duration){
     this._onExitPhase(cur.type);
     this.phaseIndex = (this.phaseIndex + 1) % this.phases.length;
@@ -1688,6 +1717,7 @@ _onExitPhase(type){
     this._onEnterPhase(this.phases[this.phaseIndex].type, now);
   }
 }
+
 
 
   _contactDamage(now){
@@ -2778,7 +2808,7 @@ function updatePlayer(){
         });
         // ② 状態を初期化（bossCleared は1回だけ定義）
         gameState = {
-            life: 3,
+            life: 100,
             score: 0,
             gameRunning: true,
             enemies: [],
