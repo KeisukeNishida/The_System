@@ -1564,7 +1564,7 @@ class Boss {
   { type:'shadow',  duration: BOSS_SHADOW_TIME }, // 3. 黒シャドー 5s
   { type:'rest',    duration: BOSS_REST5 }, // 4. 休憩 5s
   { type:'waves',   duration: BOSS_WAVE_TIME },   // 5. 波状 5s
-  { type:'laser',   duration: 1000 },       // 6. 紫レーザー（直線）：1秒間30発
+  { type:'laser',   duration: 5000 },       // 6. 紫レーザー（直線）：1秒間30発
   { type:'rest',    duration: BOSS_REST5 }, // 7. 休憩 5s → 1へ
 ];
 
@@ -1593,7 +1593,7 @@ class Boss {
     if (!hasOne){
       const cx = this.x + this.width/2, cy = this.y + this.height/2;
       gameState.bossBeams.push({
-        type:'rainbow', x:cx, y:cy, r:12,
+        type:'rainbow', x:cx, y:cy, r:60,
         vx:0, vy:0,
         seek:{ strength: 0.3 * SPEED_MULT, maxSpeed: 15 * SPEED_MULT },
         hue0: Math.floor(Math.random()*360)
