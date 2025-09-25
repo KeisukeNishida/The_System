@@ -607,6 +607,24 @@ body{
         const ctx = canvas.getContext('2d');
         const PLAYER_W = 50, PLAYER_H = 40;
         
+        // === Boss Attack Config ===
+        const RAINBOW_INVERT_MS = 6000;   // レインボー被弾で操作反転する秒数（ms）
+        const BOSS_SHADOW_RATE   = 10;    // シャドーボール 1秒あたり発射数
+        const BOSS_SHADOW_TIME   = 5000;  // シャドーボール 5秒
+        const BOSS_WAVE_TIME     = 5000;  // 波状攻撃 5秒（毎秒10発をリングで）
+        const BOSS_REST3         = 3000;  // 休憩 3秒
+        const BOSS_REST5         = 5000;  // 休憩 5秒
+
+        // 操作反転ユーティリティ
+        function isControlsInverted(){
+          return gameState.controlsInverted && performance.now() < gameState.invertUntil;
+        }
+        function mapAnswerNumber(n){
+          if (!isControlsInverted()) return n;
+          // 1↔4, 2↔3 に反転
+          return ({1:4, 2:3, 3:2, 4:1}[n] ?? n);
+        }
+
         // ===== グローバル速度スケール =====
         // 小さくするほど遅くなる（例: 0.6 = 60% の速さ）
        // ===== グローバル調整値 =====
@@ -649,6 +667,9 @@ body{
             bossFinaleActive: false,
             bossFinaleStart: 0,
             bossFinalePos: {x:0,y:0},
+            controlsInverted: false,
+            invertUntil: 0,
+
 
             };
         
@@ -1460,22 +1481,6 @@ class Enemy {
   }
 }
 
-// 既存の forEach(beam => { ...描画... }) の中身を置換
-gameState.enemyBeams.forEach(beam => {
-  if (beam.kind === 'wine' || beam.emoji) {
-    // 🍾 絵文字ビーム（サイズは beam.width/height に依存）
-    ctx.save();
-    ctx.font = `${Math.max(beam.height, 20)}px "Apple Color Emoji","Noto Color Emoji","Segoe UI Emoji",system-ui,sans-serif`;
-    ctx.textBaseline = 'top';
-    ctx.fillText(beam.emoji || '🍾', beam.x, beam.y);
-    ctx.restore();
-  } else {
-    // ← 従来のカプセルビーム描画（あなたのコードのまま）
-    drawCapsule(beam.x, beam.y, beam.width, beam.height, beam.hue || 320);
-  }
-});
-
-
 
 function drawWordCard(vocab, centerX, top, cardW = 160, cardH = 110) {
   const radius = 12;
@@ -1609,101 +1614,100 @@ function drawBlackWolf(ctx, cx, cy, w=56, h=56, t=0){
     // ボス
     // ★★★ ここから Boss を全置換 ★★★
    // === Boss: Black Wolf (emoji wine beams & contact damage) ==============
+// === Boss: 新サイクル ===
+// 1) 黒いシャドーボール 10発/秒 5秒（壁で跳ね返り、5回で消滅）
+// 2) 休憩 3秒
+// 3) 波状攻撃：毎秒10発を360°リングで5秒
+// 4) レインボー光線：追尾する1発（被弾で操作反転）5秒
+// 5) 休憩 3秒
+// 6) 360°ミサイル（同時に5方向）1秒
+// 7) 休憩 5秒 → 1に戻る
 class Boss {
-  constructor() {
-    // 主役キャラと同サイズ
+  constructor(){
     const pw = (gameState.player?.width  ?? 50);
     const ph = (gameState.player?.height ?? 40);
-    this.width  = pw;
-    this.height = ph;
-
-    this.x = canvas.width / 2 - this.width / 2;
-    this.y = canvas.height / 2 - this.height / 2;
-
-    this.speed = 10 * SPEED_MULT;     // とても速い
+    this.width = pw; this.height = ph;
+    this.x = canvas.width/2 - this.width/2;
+    this.y = canvas.height/2 - this.height/2;
+    this.speed = 10 * SPEED_MULT;
     this.life  = 10;
 
-    // 移動
-    this.lastMoveChange = 0;
-    this.moveTarget = { x: this.x, y: this.y };
-    this.phase = Math.random() * Math.PI * 2;
+    this.vocab = getRandomBossVocab();
 
-    // 単語（従来仕様を踏襲）
-    this.vocab = getRandomBossVocab(); bossVocabIndex++;
-
-    // 接触ダメージ用CD
-    this.lastTouchTime = 0;
-    this.touchCooldown = 900; // ms
-
-    // ===== 攻撃タイムライン =====
-    // 1) spray(5s/80発) → 2) rest(3s) → 3) waves(10発×5) → 4) rest(3s) → 5) spray(5s)
-    this.phases = [
-      { type:'spray', duration:5000 },
-      { type:'rest',  duration:3000 },
-      { type:'waves', duration:2500 }, // 500ms×5回（実動は内部で管理）
-      { type:'rest',  duration:3000 },
-      { type:'spray', duration:5000 },
-    ];
     this.phaseIndex = 0;
+    this.phases = [
+      {type:'shadow',   duration: BOSS_SHADOW_TIME},
+      {type:'rest',     duration: BOSS_REST3},
+      {type:'waves',    duration: BOSS_WAVE_TIME},
+      {type:'rainbow',  duration: 5000},
+      {type:'rest',     duration: BOSS_REST3},
+      {type:'ring360',  duration: 1000},
+      {type:'rest',     duration: BOSS_REST5},
+    ];
     this.phaseStart = performance.now();
     this._onEnterPhase(this.phases[0].type, this.phaseStart);
+
+    // 接触ダメージ
+    this.lastTouchTime = 0;
+    this.touchCooldown = 900;
+    this.lastMoveChange = 0;
+    this.moveTarget = {x:this.x, y:this.y};
   }
 
   _onEnterPhase(type, now){
-    if (type === 'spray'){
-      // 5秒で80発 → 62.5ms間隔（FIRE_RATEで遅速補正）
-      this.sprayInterval = (5000/80) / FIRE_RATE;
-      this.nextShotTime  = now;
+    if (type === 'shadow'){
+      this.shadowInterval = (1000 / BOSS_SHADOW_RATE) / FIRE_RATE; // 10発/秒
+      this.nextShadowTime = now;
     } else if (type === 'waves'){
-      this.waveIndex = 0;
-      this.nextWaveTime = now;             // 即1回目
-      this.waveInterval = 500 / FIRE_RATE; // 500msごと
+      this.nextWaveTime = now;     // 毎秒リング
+      this.waveInterval = 1000 / FIRE_RATE;
+    } else if (type === 'rainbow'){
+      // 追尾弾を1発だけ生成
+      const cx = this.x + this.width/2, cy = this.y + this.height/2;
+      gameState.bossBeams.push({
+        type:'rainbow', x:cx, y:cy, r:12,
+        vx: 0, vy: 0,
+        seek:{ strength: 0.12 * SPEED_MULT, maxSpeed: 6 * SPEED_MULT },
+        hue0: Math.floor(Math.random()*360)
+      });
+    } else if (type === 'ring360'){
+      // 同時に5方向（72度間隔）
+      const cx = this.x + this.width/2, cy = this.y + this.height/2;
+      for (let i=0;i<5;i++){
+        const ang = (i/5) * Math.PI*2;
+        const spd = 7 * SPEED_MULT;
+        gameState.bossBeams.push({
+          type:'ring', x:cx, y:cy, r:8,
+          vx: Math.cos(ang)*spd, vy: Math.sin(ang)*spd
+        });
+      }
+    }
+  }
+  _onExitPhase(type){
+    if (type === 'rainbow'){
+      // レインボー弾を掃除（次フェーズへ持ち越さない）
+      gameState.bossBeams = gameState.bossBeams.filter(b => b.type !== 'rainbow');
     }
   }
 
-  pickNewTarget() {
-    const pad = 8;
-    this.moveTarget.x = Math.random() * (canvas.width  - this.width  - pad*2) + pad;
-    this.moveTarget.y = Math.random() * (canvas.height - this.height - pad*2) + pad;
-  }
-
-  _fireSprayShot(){
-    // 🍾/🍷のどちらか、ややばらけ
-    const cx = this.x + this.width/2;
-    const cy = this.y + this.height/2;
-    const px = gameState.player.x + gameState.player.width/2;
-    const py = gameState.player.y + gameState.player.height/2;
-
-    let dx = px - cx, dy = py - cy; const d = Math.hypot(dx,dy) || 1; dx/=d; dy/=d;
-    const spread = (Math.random()-0.5) * 0.25;
-    const ang = Math.atan2(dy, dx) + spread;
-    const speed = 11 * SPEED_MULT;
-
-    const emoji = Math.random() < 0.5 ? '🍾' : '🍷';
+  _fireShadowBall(){
+    const cx = this.x + this.width/2, cy = this.y + this.height/2;
+    const ang = Math.random() * Math.PI*2;
+    const spd = 6.5 * SPEED_MULT;
     gameState.bossBeams.push({
-      kind:'wine', emoji,
-      x: cx-12, y: cy-12,
-      vx: Math.cos(ang)*speed,
-      vy: Math.sin(ang)*speed,
-      width:24, height:24
+      type:'shadow', x:cx, y:cy, r:9,
+      vx: Math.cos(ang)*spd, vy: Math.sin(ang)*spd,
+      bounces:0, maxBounces:5
     });
   }
-
-  _fireWaveBurst(k){
-    // 10方向に一斉射。外向き（波ごとに速度↑＆角度を少し回す）
-    const cx = this.x + this.width/2;
-    const cy = this.y + this.height/2;
-    const baseAng = (k * 0.35);                 // 回転
-    const speed = (5 + k*1.6) * SPEED_MULT;     // 波ごとに速く
-    for(let i=0;i<10;i++){
-      const ang = baseAng + i*(Math.PI*2/10);
-      const emoji = Math.random()<0.6 ? '🍾' : '🍷';
+  _fireWaveRing(){
+    const cx = this.x + this.width/2, cy = this.y + this.height/2;
+    for (let i=0;i<10;i++){
+      const ang = (i/10) * Math.PI*2;
+      const spd = 5.5 * SPEED_MULT;
       gameState.bossBeams.push({
-        kind:'wine', emoji,
-        x: cx-12, y: cy-12,
-        vx: Math.cos(ang)*speed,
-        vy: Math.sin(ang)*speed,
-        width:24, height:24
+        type:'wave', x:cx, y:cy, r:8,
+        vx: Math.cos(ang)*spd, vy: Math.sin(ang)*spd
       });
     }
   }
@@ -1712,21 +1716,19 @@ class Boss {
     const cur = this.phases[this.phaseIndex];
     const elapsed = now - this.phaseStart;
 
-    if (cur.type === 'spray'){
-      while (now >= this.nextShotTime && elapsed <= cur.duration){
-        this._fireSprayShot();
-        this.nextShotTime += this.sprayInterval;
+    if (cur.type === 'shadow'){
+      while (now >= this.nextShadowTime && elapsed <= cur.duration){
+        this._fireShadowBall();
+        this.nextShadowTime += this.shadowInterval;
       }
     } else if (cur.type === 'waves'){
-      // 10発×5回
-      while (this.waveIndex < 5 && now >= this.nextWaveTime){
-        this._fireWaveBurst(this.waveIndex);
-        this.waveIndex++;
+      if (now >= this.nextWaveTime && elapsed <= cur.duration){
+        this._fireWaveRing();
         this.nextWaveTime += this.waveInterval;
       }
     }
-    // フェーズ切り替え
     if (elapsed >= cur.duration){
+      this._onExitPhase(cur.type);
       this.phaseIndex = (this.phaseIndex + 1) % this.phases.length;
       this.phaseStart = now;
       this._onEnterPhase(this.phases[this.phaseIndex].type, now);
@@ -1735,66 +1737,57 @@ class Boss {
 
   _contactDamage(now){
     const p = gameState.player;
-    const hit =
-      p.x < this.x + this.width &&
-      p.x + p.width > this.x &&
-      p.y < this.y + this.height &&
-      p.y + p.height > this.y;
+    const hit = (p.x < this.x + this.width &&
+                 p.x + p.width > this.x &&
+                 p.y < this.y + this.height &&
+                 p.y + p.height > this.y);
     if (hit && (now - this.lastTouchTime > this.touchCooldown)){
       this.lastTouchTime = now;
-      gameState.life--;
-      updateUI?.();
-      // ちょいエフェクト
-      gameState.explosions.push(new Explosion(
-        p.x + p.width/2, p.y - 16
-      ));
+      gameState.life--; updateUI?.();
+      gameState.explosions.push(new Explosion(p.x+p.width/2, p.y-16));
     }
   }
 
-  update(now) {
-    // 攻撃サイクル
+  pickNewTarget(){
+    const pad = 8;
+    this.moveTarget.x = Math.random()*(canvas.width - this.width - pad*2) + pad;
+    this.moveTarget.y = Math.random()*(canvas.height - this.height - pad*2) + pad;
+  }
+
+  update(now){
     this._updatePhase(now);
 
-    // 移動（画面全体）
-    if (now - this.lastMoveChange > 400){ // 素早くターゲット変更
+    if (now - this.lastMoveChange > 400){
       this.lastMoveChange = now;
       this.pickNewTarget();
     }
     const dx = this.moveTarget.x - this.x;
     const dy = this.moveTarget.y - this.y;
-    const d  = Math.hypot(dx, dy) || 1;
-    const vx = (dx/d) * this.speed;
-    const vy = (dy/d) * this.speed;
-    this.x += vx * dt;
-    this.y += vy * dt;
+    const d  = Math.hypot(dx,dy) || 1;
+    this.x += (dx/d)*this.speed * dt;
+    this.y += (dy/d)*this.speed * dt;
 
-    // 画面内に収める
     const pad = 4;
-    this.x = Math.max(pad, Math.min(this.x, canvas.width  - this.width  - pad));
+    this.x = Math.max(pad, Math.min(this.x, canvas.width - this.width - pad));
     this.y = Math.max(pad, Math.min(this.y, canvas.height - this.height - pad));
 
-    // ボディ接触ダメージ
     this._contactDamage(now);
   }
 
   nextWord(){
     this.vocab = getRandomBossVocab();
-    bossVocabIndex++;
   }
 
   draw(){
     const cx = this.x + this.width/2;
     const cy = this.y + this.height/2;
-    const t  = (performance.now() + this.phase*1000) / 1000;
-
-    // 黒狼本体
+    const t  = performance.now()/1000;
     drawBlackWolf(ctx, cx, cy, this.width, this.height, t);
-
-    // 単語カード（従来どおり）
     const cardTop = Math.max(10, this.y - this.height - 120);
     drawWordCard(this.vocab, cx, cardTop, 180, 120);
   }
 }
+
 
 
         
@@ -2288,71 +2281,114 @@ function updateEnemyBeams() {
 }
 
    // ★ ここから全置換：ボス弾（🍾🍷対応 & フォールバックで円弾もOK）
-function updateBossBeams() {
+// === Boss弾の更新＆描画（跳ね返り・追尾・色分け） ===
+function updateBossBeams(){
   const p = gameState.player;
+  const now = performance.now();
 
   gameState.bossBeams = gameState.bossBeams.filter(b => {
+    // 追尾（レインボー）
+    if (b.type === 'rainbow' && b.seek){
+      const dx = (p.x + p.width/2)  - b.x;
+      const dy = (p.y + p.height/2) - b.y;
+      const d  = Math.hypot(dx, dy) || 1;
+      const ax = (dx/d) * b.seek.strength;
+      const ay = (dy/d) * b.seek.strength;
+      b.vx = (b.vx + ax); b.vy = (b.vy + ay);
+      const sp = Math.hypot(b.vx, b.vy);
+      const cap = b.seek.maxSpeed;
+      if (sp > cap){ b.vx = b.vx/sp*cap; b.vy = b.vy/sp*cap; }
+    }
+
     // 移動
-    b.x += (b.vx || 0) * dt;
-    b.y += (b.vy || 0) * dt;
+    b.x += (b.vx||0) * dt;
+    b.y += (b.vy||0) * dt;
 
-    // 当たり判定
-    let hit = false;
-    if (b.kind === 'wine' || b.emoji) {
-      // 🍾🍷は矩形AABB
-      const bw = b.width  || 24, bh = b.height || 24;
-      hit = (b.x < p.x + p.width &&
-             b.x + bw > p.x &&
-             b.y < p.y + p.height &&
-             b.y + bh > p.y);
-    } else {
-      // 円弾フォールバック（rが無ければ8）
-      const r = b.r || 8;
-      const nx = Math.max(p.x, Math.min(b.x, p.x + p.width));
-      const ny = Math.max(p.y, Math.min(b.y, p.y + p.height));
-      hit = Math.hypot(b.x - nx, b.y - ny) <= r;
+    // 跳ね返り（シャドー：円）
+    if (b.type === 'shadow'){
+      const r = b.r||8;
+      if (b.x - r <= 0 && (b.vx||0) < 0){ b.vx = -b.vx; b.bounces++; b.x = r; }
+      if (b.x + r >= canvas.width  && (b.vx||0) > 0){ b.vx = -b.vx; b.bounces++; b.x = canvas.width - r; }
+      if (b.y - r <= 0 && (b.vy||0) < 0){ b.vy = -b.vy; b.bounces++; b.y = r; }
+      if (b.y + r >= canvas.height && (b.vy||0) > 0){ b.vy = -b.vy; b.bounces++; b.y = canvas.height - r; }
+      if ((b.bounces||0) >= (b.maxBounces||5)) return false;
     }
 
-    if (hit) {
+    // 当たり判定（円 vs 矩形）
+    const r = b.r || 8;
+    const nx = Math.max(p.x, Math.min(b.x, p.x + p.width));
+    const ny = Math.max(p.y, Math.min(b.y, p.y + p.height));
+    const hit = Math.hypot(b.x - nx, b.y - ny) <= r;
+
+    if (hit){
       gameState.explosions.push(new Explosion(p.x + p.width/2, p.y - 20));
-      gameState.life--;
-      updateUI?.();
-      return false; // ヒットで消滅
+      gameState.life--; updateUI?.();
+
+      if (b.type === 'rainbow'){
+        gameState.controlsInverted = true;
+        gameState.invertUntil = now + RAINBOW_INVERT_MS;
+        gameState.messages.push(new FloatingMessage(
+          p.x + p.width/2, p.y - 24, "CONFUSED!", "#88f"
+        ));
+      }
+      return false; // ヒットで弾消滅
     }
 
-    // 画面外で消す
-    const m = 40;
-    return b.x > -m && b.x < canvas.width + m && b.y > -m && b.y < canvas.height + m;
+    // 画面外（跳ね返らない弾）は破棄
+    if (b.type !== 'shadow'){
+      const m = 40;
+      if (b.x < -m || b.x > canvas.width + m || b.y < -m || b.y > canvas.height + m) return false;
+    }
+    return true;
   });
 
   // 描画
   gameState.bossBeams.forEach(b => {
-    if (b.kind === 'wine' || b.emoji) {
-      // 🍾🍷の絵文字弾
-      ctx.save();
-      const size = Math.max(b.height || 24, 20);
-      ctx.font = `${size}px "Apple Color Emoji","Noto Color Emoji","Segoe UI Emoji",system-ui,sans-serif`;
-      ctx.textBaseline = 'top';
-      ctx.fillText(b.emoji || '🍾', b.x, b.y);
-      ctx.restore();
-    } else {
-      // 円弾（安全デフォルト半径）
-      const r = b.r || 8;
-      ctx.save();
-      ctx.shadowColor = 'rgba(255,40,40,0.9)';
-      ctx.shadowBlur = 18;
-      const g = ctx.createRadialGradient(b.x, b.y, 0, b.x, b.y, r);
-      g.addColorStop(0, '#fff5f5');
-      g.addColorStop(0.6, '#ff5555');
-      g.addColorStop(1, '#aa0000');
-      ctx.fillStyle = g;
-      ctx.beginPath();
-      ctx.arc(b.x, b.y, r, 0, Math.PI * 2);
-      ctx.fill();
-      ctx.restore();
+    const r = b.r || 8;
+    let g;
+    if (b.type === 'shadow'){
+      g = ctx.createRadialGradient(b.x, b.y, 0, b.x, b.y, r);
+      g.addColorStop(0,'#555'); g.addColorStop(1,'#000');
+    } else if (b.type === 'wave'){
+      g = ctx.createRadialGradient(b.x, b.y, 0, b.x, b.y, r);
+      g.addColorStop(0,'#e6f6ff'); g.addColorStop(0.6,'#4ec3ff'); g.addColorStop(1,'#0066cc');
+    } else if (b.type === 'rainbow'){
+      const hue = ((performance.now()/20 + (b.hue0||0)) % 360)|0;
+      g = ctx.createRadialGradient(b.x, b.y, 0, b.x, b.y, r);
+      g.addColorStop(0,  `hsla(${hue},100%,95%,1)`);
+      g.addColorStop(0.5,`hsla(${hue},100%,60%,1)`);
+      g.addColorStop(1,  `hsla(${(hue+60)%360},100%,45%,1)`);
+    } else { // ring360
+      g = ctx.createRadialGradient(b.x, b.y, 0, b.x, b.y, r);
+      g.addColorStop(0,'#fff5e6'); g.addColorStop(0.6,'#ffb347'); g.addColorStop(1,'#ff7f27');
     }
+    ctx.save();
+    ctx.shadowColor = 'rgba(255,255,255,0.35)';
+    ctx.shadowBlur = 8;
+    ctx.fillStyle = g;
+    ctx.beginPath();
+    ctx.arc(b.x, b.y, r, 0, Math.PI*2);
+    ctx.fill();
+    ctx.restore();
   });
 }
+
+function updatePlayer(){
+  const p = gameState.player;
+  const moveSpeed = 12 * SPEED_MULT;
+  const inv = isControlsInverted();
+
+  const left  = inv ? gameState.keys['ArrowRight'] : gameState.keys['ArrowLeft'];
+  const right = inv ? gameState.keys['ArrowLeft']  : gameState.keys['ArrowRight'];
+  const up    = inv ? gameState.keys['ArrowDown']  : gameState.keys['ArrowUp'];
+  const down  = inv ? gameState.keys['ArrowUp']    : gameState.keys['ArrowDown'];
+
+  if (left  && p.x > 0) p.x -= moveSpeed * dt;
+  if (right && p.x < canvas.width - p.width) p.x += moveSpeed * dt;
+  if (up    && p.y > 0) p.y -= moveSpeed * dt;
+  if (down  && p.y < canvas.height - p.height - 100) p.y += moveSpeed * dt;
+}
+
 
         // ボスHPバー
         function drawBossHPBar() {
@@ -2628,22 +2664,7 @@ function updateBossBeams() {
         }
     }
     
-    // プレイヤー更新（なめらかな移動）
-    function updatePlayer() {
-        const moveSpeed = 12 * SPEED_MULT;
-        if (gameState.keys['ArrowLeft'] && gameState.player.x > 0) {
-            gameState.player.x -= moveSpeed * dt;;
-        }
-        if (gameState.keys['ArrowRight'] && gameState.player.x < canvas.width - gameState.player.width) {
-            gameState.player.x += moveSpeed * dt;
-        }
-        if (gameState.keys['ArrowUp'] && gameState.player.y > 0) {
-            gameState.player.y -= moveSpeed * dt;;
-        }
-        if (gameState.keys['ArrowDown'] && gameState.player.y < canvas.height - gameState.player.height - 100) {
-            gameState.player.y += moveSpeed * dt;
-        }
-    }
+   
     // ライフ表示
     function renderLife(n){
         const el = document.getElementById('lifeDisplay');
@@ -2802,45 +2823,44 @@ function updateBossBeams() {
 
     
     // === キーボード入力（PC）===
-    // 矢印キーは押下中 true、離したら false。既定動作は止める。
-    const ARROWS = ['ArrowUp','ArrowDown','ArrowLeft','ArrowRight'];
+const ARROWS = ['ArrowUp','ArrowDown','ArrowLeft','ArrowRight'];
 
-    document.addEventListener('keydown', (e) => {
-    if (!gameState.gameRunning) return;
+document.addEventListener('keydown', (e) => {
+  const k = e.key;
 
-    const k = e.key;
+  // 矢印：押下中ON
+  if (ARROWS.includes(k)) {
+    e.preventDefault();
+    gameState.keys[k] = true;
+    return;
+  }
 
-    // 矢印：移動フラグON＋既定動作を止める（スクロール／フォーカス移動防止）
-    if (ARROWS.includes(k)) {
-        e.preventDefault();
-        gameState.keys[k] = true;
-    }
+  // 1〜4：発射
+  if (k === '1' || k === '2' || k === '3' || k === '4') {
+    e.preventDefault();
+    const n = mapAnswerNumber(parseInt(k, 10));
+    gameState.missiles.push(new Missile(
+      gameState.player.x + gameState.player.width / 2 - 10,
+      gameState.player.y - 30,
+      n
+    ));
+  }
+});
 
-    // 数字1〜4：発射
-    if (k === '1' || k === '2' || k === '3' || k === '4') {
-        e.preventDefault(); // IMEやフォーカス移動の悪影響を避ける
-        const n = parseInt(k, 10);
-        gameState.missiles.push(new Missile(
-        gameState.player.x + gameState.player.width / 2 - 10,
-        gameState.player.y - 30,
-        n
-        ));
-    }
-    });
+// 離したらOFF
+window.addEventListener('keyup', (e) => {
+  const k = e.key;
+  if (ARROWS.includes(k)) {
+    e.preventDefault();
+    gameState.keys[k] = false;
+  }
+});
 
-    // 離したらフラグOFF（document でも window でもOK。安全のため window）
-    window.addEventListener('keyup', (e) => {
-    const k = e.key;
-    if (ARROWS.includes(k)) {
-        e.preventDefault();
-        gameState.keys[k] = false;
-    }
-    });
+// タブ外へ行ったらクリア
+window.addEventListener('blur', () => {
+  ARROWS.forEach(k => (gameState.keys[k] = false));
+});
 
-    // タブ外へフォーカスが移った時に押下状態をクリア（キー張り付き防止）
-    window.addEventListener('blur', () => {
-    ARROWS.forEach(k => gameState.keys[k] = false);
-    });
 
     
 
@@ -2868,12 +2888,14 @@ const answerButtons = document.querySelectorAll(
 
 function fireFromButton(num){
   if (!gameState.gameRunning) return;
+  const n = mapAnswerNumber(num);
   gameState.missiles.push(new Missile(
     gameState.player.x + gameState.player.width / 2 - 10,
     gameState.player.y - 30,
-    num
+    n
   ));
 }
+
 
 answerButtons.forEach(btn => {
   const n = parseInt(btn.dataset.answer, 10);
