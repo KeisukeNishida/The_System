@@ -1052,6 +1052,52 @@ function drawDevilWing(ctx, baseX, baseY, side = 1, t = 0, size = 1){
   ctx.restore();
 }
 
+
+function drawAngelWing(ctx, baseX, baseY, side = 1, t = 0, size = 1){
+  ctx.save();
+  ctx.translate(baseX, baseY);
+  ctx.scale(size, size);
+
+  // ゆるめの羽ばたき（本体は揺れない）
+  const flap = Math.sin(t * 6.0);      // 速すぎず重厚
+  const ang  = flap * 0.45;            // 角度の振れ
+  ctx.rotate(side * (Math.PI/10 + ang));
+
+  // 翼のメイン形（黒い羽根：曲線の一枚羽）
+  const W = 90, H = 70;
+  const grad = ctx.createLinearGradient(0,0, side*W, H);
+  grad.addColorStop(0, '#000');
+  grad.addColorStop(1, '#1b1b1b');
+
+  ctx.fillStyle = grad;
+  ctx.strokeStyle = '#333';
+  ctx.lineWidth = 1.4;
+
+  ctx.beginPath();
+  ctx.moveTo(0, 0);
+  ctx.quadraticCurveTo(side*40, -18, side*70, -8);
+  ctx.quadraticCurveTo(side*92, 10,  side*88, 26);
+  ctx.quadraticCurveTo(side*70, 46,  side*24, 54);
+  ctx.quadraticCurveTo(side*14, 40,  0, 26);
+  ctx.closePath();
+  ctx.fill();
+  ctx.stroke();
+
+  // フェザー（羽毛すじ）を数本
+  ctx.strokeStyle = 'rgba(255,255,255,0.06)';
+  ctx.lineWidth = 1.1;
+  for (let i=0;i<6;i++){
+    const u = i/5;
+    ctx.beginPath();
+    ctx.moveTo(side*(20+u*58), 6+u*34);
+    ctx.lineTo(side*(10+u*42), 2+u*24);
+    ctx.stroke();
+  }
+
+  ctx.restore();
+}
+
+
 // === Canvas: Pink Wolf (enemy) =========================================
 // === Canvas: Pink Wolf (enemy / 恐怖版：赤目＋長牙) ======================
 function drawPinkWolf(ctx, cx, cy, w=56, h=56, t=0){
@@ -1326,6 +1372,119 @@ drawDevilWing(ctx,  46, 8,  1, t, 1.05);
   ctx.restore();
 }
 
+// 黒い天使（人型＋単眼がプレイヤーを追視）
+function drawBlackAngel(ctx, cx, cy, w=120, h=140, t=0, playerX=null, playerY=null){
+  ctx.save();
+  ctx.translate(cx, cy);
+
+  // 翼（左右）：黒の天使の羽
+  drawAngelWing(ctx, -52, -8, -1, t, 1.15);
+  drawAngelWing(ctx,  52, -8,  1, t, 1.15);
+
+  // 本体は揺らさない
+  ctx.scale(w/120, h/140);
+  ctx.lineJoin = 'round';
+  ctx.lineCap  = 'round';
+
+  // 体（ローブ風の胴）
+  let g = ctx.createLinearGradient(0,-30, 0, 70);
+  g.addColorStop(0,'#111');
+  g.addColorStop(1,'#000');
+  ctx.fillStyle = g;
+  ctx.beginPath();
+  ctx.moveTo(-28, -8);
+  ctx.quadraticCurveTo(-38, 22, -26, 70);
+  ctx.lineTo( 26, 70);
+  ctx.quadraticCurveTo( 38, 22,  28, -8);
+  ctx.closePath();
+  ctx.fill();
+
+  // 腕（左右）
+  ctx.fillStyle = '#0d0d0d';
+  // 左腕
+  ctx.beginPath();
+  ctx.moveTo(-28,-6); ctx.lineTo(-46,14); ctx.lineTo(-38,20); ctx.lineTo(-22,2); ctx.closePath(); ctx.fill();
+  // 右腕
+  ctx.beginPath();
+  ctx.moveTo( 28,-6); ctx.lineTo( 46,14); ctx.lineTo( 38,20); ctx.lineTo( 22,2); ctx.closePath(); ctx.fill();
+
+  // 足（裾の下にシルエット）
+  ctx.fillStyle = '#0a0a0a';
+  ctx.fillRect(-16, 70, 12, 18);
+  ctx.fillRect(  4, 70, 12, 18);
+
+  // 頭（円形）
+  const headY = -28;
+  g = ctx.createRadialGradient(0, headY-6, 6, 0, headY+12, 46);
+  g.addColorStop(0,'#1a1a1a');
+  g.addColorStop(1,'#000');
+  ctx.fillStyle = g;
+  ctx.beginPath();
+  ctx.ellipse(0, headY, 34, 30, 0, 0, Math.PI*2);
+  ctx.fill();
+
+  // 口（小さめの切り込み）
+  ctx.strokeStyle = '#222';
+  ctx.lineWidth = 2;
+  ctx.beginPath();
+  ctx.moveTo(-6, headY+16);
+  ctx.quadraticCurveTo(0, headY+18, 6, headY+16);
+  ctx.stroke();
+
+  // ===== 単眼（巨大な赤い目：主人公を追視） =====
+  // プレイヤー方向角
+  let ang = 0;
+  if (playerX != null && playerY != null){
+    // 頭の世界座標（おおよそ）
+    const headWorldX = cx;
+    const headWorldY = cy + headY*(h/140);
+    ang = Math.atan2(playerY - headWorldY, playerX - headWorldX);
+  }
+
+  // 白目（土台）
+  ctx.fillStyle = '#fff';
+  ctx.beginPath();
+  ctx.ellipse(0, headY, 30, 20, 0, 0, Math.PI*2);
+  ctx.fill();
+
+  // 赤い虹彩（大きめ）
+  const irisGrad = ctx.createRadialGradient(0, headY, 0, 0, headY, 16);
+  irisGrad.addColorStop(0,'#ffdede');
+  irisGrad.addColorStop(0.5,'#ff3a3a');
+  irisGrad.addColorStop(1,'#5a0000');
+  ctx.fillStyle = irisGrad;
+  ctx.beginPath();
+  ctx.ellipse(0, headY, 18, 13, 0, 0, Math.PI*2);
+  ctx.fill();
+
+  // 瞳孔（主人公方向にオフセット）
+  const rMax = 7.5;                        // 眼内の可動半径
+  const px = Math.cos(ang) * rMax;
+  const py = Math.sin(ang) * rMax * 0.75;  // 縦は少し抑える
+  ctx.fillStyle = '#0a0000';
+  ctx.beginPath();
+  ctx.ellipse(px, headY + py, 4.2, 4.2, 0, 0, Math.PI*2);
+  ctx.fill();
+
+  // ハイライト & 赤い外光
+  ctx.fillStyle = '#fff';
+  ctx.beginPath();
+  ctx.arc(px - 1.2, headY + py - 1.2, 1.4, 0, Math.PI*2);
+  ctx.fill();
+
+  ctx.save();
+  ctx.shadowColor = 'rgba(255,0,0,0.85)';
+  ctx.shadowBlur  = 16;
+  ctx.globalAlpha = 0.7;
+  ctx.strokeStyle = 'rgba(255,0,0,0.35)';
+  ctx.lineWidth   = 2;
+  ctx.beginPath();
+  ctx.ellipse(0, headY, 30, 20, 0, 0, Math.PI*2);
+  ctx.stroke();
+  ctx.restore();
+
+  ctx.restore();
+}
 
 
   // 敵クラス
@@ -1549,12 +1708,14 @@ class Boss {
   constructor(){
     const pw = (gameState.player?.width  ?? 50);
     const ph = (gameState.player?.height ?? 40);
-    this.width = pw; this.height = ph;
+    const k = 3.0;                     // ★ ここを 3.0 に
+    this.width  = Math.round(pw * k);
+    this.height = Math.round(ph * k);
+    // （以下そのまま）
     this.x = canvas.width/2 - this.width/2;
     this.y = canvas.height/2 - this.height/2;
-    this.speed = 15 * SPEED_MULT;
+    this.speed = 10 * SPEED_MULT;
     this.life  = 10;
-
     this.vocab = getRandomBossVocab();
 
     this.phaseIndex = 0;
@@ -1764,13 +1925,22 @@ _onExitPhase(type){
   }
 
   draw(){
-    const cx = this.x + this.width/2;
-    const cy = this.y + this.height/2;
-    const t  = performance.now()/1000;
-    drawBlackWolf(ctx, cx, cy, this.width, this.height, t);
-    const cardTop = Math.max(10, this.y - this.height - 120);
-    drawWordCard(this.vocab, cx, cardTop, 180, 120);
-  }
+  const cx = this.x + this.width/2;
+  const cy = this.y + this.height/2;
+  const t  = performance.now()/1000;
+
+  // 主人公の中心（追視用）
+  const px = gameState.player.x + gameState.player.width/2;
+  const py = gameState.player.y + gameState.player.height/2;
+
+  // ★ ここを黒い天使に差し替え
+  drawBlackAngel(ctx, cx, cy, this.width, this.height, t, px, py);
+
+  // 単語カードは従来通り（背より少し上へ）
+  const cardTop = Math.max(10, this.y - this.height - 120);
+  drawWordCard(this.vocab, cx, cardTop, 180, 120);
+}
+
 }
 
 
