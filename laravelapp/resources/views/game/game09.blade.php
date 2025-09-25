@@ -1592,18 +1592,19 @@ class Boss {
     this.waveInterval = 1000 / FIRE_RATE;
 
   } else if (type === 'rainbow'){
-    // ★ すでにレインボー弾が無ければ1発だけ生成（ヒットするまで存続）
-    const hasOne = gameState.bossBeams.some(b => b.type === 'rainbow');
-    if (!hasOne){
-      const cx = this.x + this.width/2, cy = this.y + this.height/2;
-      gameState.bossBeams.push({
-        type:'rainbow', x:cx, y:cy, r:12,
-        vx:0, vy:0,
-        // しっかり追尾（“ずっと追跡”）：必要なら strength を微調整
-        seek:{ strength: 0.14 * SPEED_MULT, maxSpeed: 6 * SPEED_MULT },
-        hue0: Math.floor(Math.random()*360)
-      });
-    }
+  const hasOne = gameState.bossBeams.some(b => b.type === 'rainbow');
+  if (!hasOne){
+    const cx = this.x + this.width/2, cy = this.y + this.height/2;
+    gameState.bossBeams.push({
+      type:'rainbow', x:cx, y:cy, r:12,
+      vx: 0, vy: 0,
+      // 追尾パラメータ（速さはここで調整）
+      seek:{ strength: 0.3 * SPEED_MULT, maxSpeed: 15 * SPEED_MULT },
+      hue0: Math.floor(Math.random()*360)
+    });
+  }
+
+
 
   } else if (type === 'ring360'){
     // 360°同時に5方向（1回）＝「1秒間に5発」のイメージ
@@ -2249,30 +2250,33 @@ function updateBossBeams(){
     }
 
     // 当たり判定（円 vs 矩形）
-    const r = b.r || 8;
-    const nx = Math.max(p.x, Math.min(b.x, p.x + p.width));
-    const ny = Math.max(p.y, Math.min(b.y, p.y + p.height));
-    const hit = Math.hypot(b.x - nx, b.y - ny) <= r;
+const r = b.r || 8;
+const nx = Math.max(p.x, Math.min(b.x, p.x + p.width));
+const ny = Math.max(p.y, Math.min(b.y, p.y + p.height));
+const hit = Math.hypot(b.x - nx, b.y - ny) <= r;
 
-    if (hit){
-      gameState.explosions.push(new Explosion(p.x + p.width/2, p.y - 20));
-      gameState.life--; updateUI?.();
+if (hit){
+  gameState.explosions.push(new Explosion(p.x + p.width/2, p.y - 20));
+  gameState.life--; updateUI?.();
 
-      if (b.type === 'rainbow'){
-        gameState.controlsInverted = true;
-        gameState.invertUntil = now + RAINBOW_INVERT_MS;
-        gameState.messages.push(new FloatingMessage(
-          p.x + p.width/2, p.y - 24, "CONFUSED!", "#88f"
-        ));
-      }
-      return false; // ヒットで弾消滅
-    }
+  if (b.type === 'rainbow'){
+    gameState.controlsInverted = true;
+    gameState.invertUntil = now + RAINBOW_INVERT_MS;
+    gameState.messages.push(new FloatingMessage(
+      p.x + p.width/2, p.y - 24, "CONFUSED!", "#88f"
+    ));
+  }
+  return false; // ← 当たった弾は消える（rainbow含む）
+}
+
 
     // 画面外（跳ね返らない弾）は破棄
-    if (b.type !== 'shadow'){
-      const m = 40;
-      if (b.x < -m || b.x > canvas.width + m || b.y < -m || b.y > canvas.height + m) return false;
-    }
+   // 画面外（跳ね返らない弾）は破棄
+if (b.type !== 'shadow' && b.type !== 'rainbow'){  // ← rainbowを除外
+  const m = 40;
+  if (b.x < -m || b.x > canvas.width + m || b.y < -m || b.y > canvas.height + m) return false;
+}
+
     return true;
   });
 
