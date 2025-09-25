@@ -27,6 +27,7 @@ body{
 
 /* ゲームは論理解像度 400x800 固定。表示はJSで拡縮＆中央寄せ */
 .game-container{
+  background-image: url("{{ asset('images/ookamichan-bg.png') }}");
   position: fixed;          /* 画面に固定 */
   left: 0; top: 0;
   width: 400px;
@@ -35,15 +36,10 @@ body{
 }
 
 /* キャンバスは入れ物いっぱいに */
-#gameCanvas{
-  position: absolute;
-  inset: 0;
-  width: 100%;
-  height: 100%;
-  background: linear-gradient(180deg, #001133 0%, #003366 100%);
-  border: none;
-  touch-action: none;
-}
+/* キャンバスは透明にしておく */
+#gameCanvas{ background: transparent !important; }
+
+
 
 
         /* ===== UI ===== */
@@ -603,6 +599,17 @@ body{
   </div>
 
     <script>
+      
+    const bgImg = new Image();
+    bgImg.src = './ookamichan-bg.png';
+    let bgReady = false;
+    bgImg.onload = () => bgReady = true;
+
+    function drawBackground(){
+      if (bgReady) ctx.drawImage(bgImg, 0, 0, canvas.width, canvas.height);
+    }
+
+    
         const canvas = document.getElementById('gameCanvas');
         const ctx = canvas.getContext('2d');
         const PLAYER_W = 50, PLAYER_H = 40;
@@ -937,14 +944,6 @@ function getRandomBossVocab(){
   if (bossDeck.length === 0) refillBossDeck();
   return bossDeck.pop(); // すでにoptions並べ替え済みのオブジェクトを返す
 }
-
-        // 星空描画
-        function drawStars() {
-            ctx.fillStyle = '#ffffff';
-            gameState.stars.forEach(star => {
-                ctx.fillRect(star.x, star.y, star.size, star.size);
-            });
-        }
         
 // === 単語カードのサイズ（Enemy.drawの cardW/cardH と合わせる）===
 const CARD_W = 120;
@@ -2708,7 +2707,7 @@ function updatePlayer(){
     if (gameState.life <= 0) { gameOver(); return; }
 
     ctx.clearRect(0, 0, canvas.width, canvas.height);
-    drawStars();
+
 
     // 敵（生成は時間依存に・後述の spawnEnemy を修正）
     spawnEnemy();
@@ -2970,6 +2969,19 @@ answerButtons.forEach(btn => {
   layout();
 })();
 </script>
+
+<script>
+const BG_URL = @json(asset('images/ookamichan-bg.png'));
+const bgImg = new Image();
+bgImg.src = BG_URL;
+let bgReady = false;
+bgImg.onload = () => bgReady = true;
+
+function drawBackground(){
+  if (bgReady) ctx.drawImage(bgImg, 0, 0, canvas.width, canvas.height);
+}
+</script>
+
 
 </body>
 </html>
