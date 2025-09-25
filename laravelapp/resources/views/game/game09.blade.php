@@ -27,7 +27,7 @@ body{
 
 /* ゲームは論理解像度 400x800 固定。表示はJSで拡縮＆中央寄せ */
 .game-container{
-  background-image: url("{{ asset('images/ookamichan-bg.png') }}");
+  background-image: url("images/ookamichan-bg.png"); /* ← 相対パスに統一 */
   position: fixed;          /* 画面に固定 */
   left: 0; top: 0;
   width: 400px;
@@ -600,12 +600,14 @@ body{
 
     <script>
       
-    const bgImg = new Image();
-    bgImg.src = './ookamichan-bg.png';
-    let bgReady = false;
-    bgImg.onload = () => bgReady = true;
+      const bgImg = new Image();
+/* 画像をcanvasに描くので、将来toDataURL等を使う可能性に備えて */
+bgImg.crossOrigin = 'anonymous'; 
+bgImg.src = 'images/ookamichan-bg.png';          /* ← CSSと同じに */
+bgImg.onload = () => bgReady = true;
+
     // === Boss Attack Config ===
-    const RAINBOW_INVERT_MS = 6000;   // 被弾で反転する時間(ms)
+    const RAINBOW_INVERT_MS = 30000;   // 被弾で反転する時間(ms)
     const BOSS_SHADOW_RATE  = 3;      // シャドー：1秒あたり3発
     const BOSS_SHADOW_TIME  = 5000;   // シャドー持続 5秒
     const BOSS_WAVE_TIME    = 5000;   // 波状(毎秒10発リング) 5秒
@@ -646,7 +648,7 @@ body{
 
         // ゲーム状態
         let gameState = {
-            life: 100,
+            life: 5,
             score: 0,
             gameRunning: true,
             enemies: [],
@@ -1640,11 +1642,12 @@ class Enemy {
 }
 
 
-function drawWordCard(vocab, centerX, top, cardW = 160, cardH = 110) {
-  const radius = 12;
+function drawWordCard(vocab, centerX, top, cardW = 320, cardH = 220) {
+  const s = cardW / 160;                    // 160基準の倍率（320なら2倍）
+  const radius = 12 * s;
   const left = centerX - cardW / 2;
 
-  // 角丸
+  // 角丸パス
   const rr = (x, y, w, h, r) => {
     ctx.beginPath();
     ctx.moveTo(x + r, y);
@@ -1664,31 +1667,41 @@ function drawWordCard(vocab, centerX, top, cardW = 160, cardH = 110) {
   ctx.fillStyle = 'rgba(255,255,255,0.96)';
   rr(left, top, cardW, cardH, radius);
   ctx.fill();
-  ctx.lineWidth = 1;
+
+  ctx.lineWidth = 1 * s;
   ctx.strokeStyle = 'rgba(0,0,0,0.08)';
   rr(left, top, cardW, cardH, radius);
   ctx.stroke();
 
-  // 文字（中央太字＋薄い縁取りで視認性UP）
+  // テキスト共通設定
   ctx.textAlign = 'center';
   ctx.fillStyle = '#000';
   ctx.strokeStyle = 'rgba(0,0,0,0.25)';
-  ctx.lineWidth = 2;
+  ctx.lineWidth = 2 * s;
 
-  // 単語
-  ctx.font = 'bold 15px Arial';
-  ctx.strokeText(vocab.word, centerX, top + 24);
-  ctx.fillText  (vocab.word, centerX, top + 24);
+  // 単語（2倍相当：15px → 30px）
+  ctx.font = `bold ${15 * s}px Arial`;
+  ctx.strokeText(vocab.word, centerX, top + 24 * s);
+  ctx.fillText  (vocab.word, centerX, top + 24 * s);
 
-  // 選択肢
-  ctx.font = 'bold 12px Arial';
+  // 選択肢（2倍相当：12px → 24px）
+  ctx.font = `bold ${12 * s}px Arial`;
+  const startY = top + 46 * s;        // 46 → 2倍
+  const stepY  = 14 * s;              // 14 → 2倍
+  const maxW   = cardW - 12 * s;
+
   for (let i = 0; i < 4; i++) {
     const text = `${i + 1}. ${vocab.options[i]}`;
-    const display = text.length > 16 ? text.slice(0, 16) + '…' : text;
-    const y = top + 46 + i * 14;
+    let display = text;
+    // はみ出しは幅で判定して“…”省略
+    while (ctx.measureText(display).width > maxW && display.length > 2) {
+      display = display.slice(0, -2) + '…';
+    }
+    const y = startY + i * stepY;
     ctx.strokeText(display, centerX, y);
     ctx.fillText  (display, centerX, y);
   }
+
   ctx.restore();
 }
 
@@ -1708,7 +1721,7 @@ class Boss {
   constructor(){
     const pw = (gameState.player?.width  ?? 50);
     const ph = (gameState.player?.height ?? 40);
-    const k = 3.0;                     // ★ ここを 3.0 に
+    const k = 1.5;                     // ★ ここを 3.0 に
     this.width  = Math.round(pw * k);
     this.height = Math.round(ph * k);
     // （以下そのまま）
@@ -1792,9 +1805,9 @@ _onEnterPhase(type, now){
     if (!hasOne){
       const cx = this.x + this.width/2, cy = this.y + this.height/2;
       gameState.bossBeams.push({
-        type:'rainbow', x:cx, y:cy, r:12*3,            // ← 3倍サイズ
+        type:'rainbow', x:cx, y:cy, r:50,            // ← 3倍サイズ
         vx:0, vy:0,
-        seek:{ strength: 0.3 * SPEED_MULT, maxSpeed: 15 * SPEED_MULT },
+        seek:{ strength: 0.5 * SPEED_MULT, maxSpeed: 12 * SPEED_MULT },
         hue0: Math.floor(Math.random()*360)
       });
     }
@@ -1929,20 +1942,32 @@ _onExitPhase(type){
   const cy = this.y + this.height/2;
   const t  = performance.now()/1000;
 
-  // 主人公の中心（追視用）
-  const px = gameState.player.x + gameState.player.width/2;
-  const py = gameState.player.y + gameState.player.height/2;
+  // ボス描画（あなたの現在の関数名に合わせて）
+  // 例）drawBlackAngel(ctx, cx, cy, this.width, this.height, t, px, py);
+  //     または drawBlackWolf(...)
+  drawBlackAngel?.(ctx, cx, cy, this.width, this.height, t)
+  // ▼ 単語カード：上下で自動回避（ボスと重ならない）
+  const CARD_W = 320;      // 2倍想定
+  const CARD_H = 220;      // 2倍想定
+  const MARGIN = 24;       // ボスとカードの隙間
+  const PAD    = 10;       // 画面端の余白
 
-  // ★ ここを黒い天使に差し替え
-  drawBlackAngel(ctx, cx, cy, this.width, this.height, t, px, py);
+  // できれば上に置く
+  let cardTopPref = this.y - (CARD_H + MARGIN);
+  let cardTop;
 
-  // 単語カードは従来通り（背より少し上へ）
-  const cardTop = Math.max(10, this.y - this.height - 120);
-  drawWordCard(this.vocab, cx, cardTop, 180, 120);
+  if (cardTopPref >= PAD) {
+    // 上に十分なスペースがある→上に置く（重ならない）
+    cardTop = cardTopPref;
+  } else {
+    // 上が狭い→下に置く（画面外に出ないように調整）
+    cardTop = Math.min(canvas.height - CARD_H - PAD, this.y + this.height + MARGIN);
+  }
+
+  drawWordCard(this.vocab, cx, cardTop, CARD_W, CARD_H);
 }
 
 }
-
 
 
         
@@ -2490,18 +2515,22 @@ function updateBossBeams(){
     }
 
     if (hit){
-      gameState.explosions.push(new Explosion(p.x + p.width/2, p.y - 20));
-      gameState.life--; updateUI?.();
-
-      if (b.type === 'rainbow'){
-        gameState.controlsInverted = true;
-        gameState.invertUntil = now + RAINBOW_INVERT_MS;
-        gameState.messages.push(new FloatingMessage(
-          p.x + p.width/2, p.y - 24, "CONFUSED!", "#88f"
-        ));
-      }
-      return false; // 当たった弾は消滅（レーザーも同様に1ヒットで消す）
-    }
+  if (b.type === 'rainbow'){
+    // ← ダメージ0：反転効果だけ
+    gameState.controlsInverted = true;
+    gameState.invertUntil = now + RAINBOW_INVERT_MS;
+    gameState.messages.push(new FloatingMessage(
+      p.x + p.width/2, p.y - 24, "CONFUSED!", "#88f"
+    ));
+    // ※見た目用の爆発は入れない（誤解を避ける）
+  } else {
+    // 通常弾・紫レーザーなどは従来通りダメージ
+    gameState.explosions.push(new Explosion(p.x + p.width/2, p.y - 20));
+    gameState.life--;
+    updateUI?.();
+  }
+  return false; // 当たった弾は消滅
+}
 
     // 画面外で破棄（shadowはバウンド、rainbowは“当たるまで消えない”）
     if (b.type !== 'shadow' && b.type !== 'rainbow'){
@@ -2978,7 +3007,7 @@ function updatePlayer(){
         });
         // ② 状態を初期化（bossCleared は1回だけ定義）
         gameState = {
-            life: 100,
+            life: 5,
             score: 0,
             gameRunning: true,
             enemies: [],
