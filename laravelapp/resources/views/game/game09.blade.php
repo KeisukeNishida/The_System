@@ -604,6 +604,13 @@ body{
     bgImg.src = './ookamichan-bg.png';
     let bgReady = false;
     bgImg.onload = () => bgReady = true;
+    // === Boss Attack Config ===
+    const RAINBOW_INVERT_MS = 6000;   // 被弾で反転する時間(ms)
+    const BOSS_SHADOW_RATE  = 3;      // シャドー：1秒あたり3発
+    const BOSS_SHADOW_TIME  = 5000;   // シャドー持続 5秒
+    const BOSS_WAVE_TIME    = 5000;   // 波状(毎秒10発リング) 5秒
+    const BOSS_REST5        = 5000;   // 休憩 5秒
+    // （BOSS_REST3 は使わないので削除してOK）
 
     function drawBackground(){
       if (bgReady) ctx.drawImage(bgImg, 0, 0, canvas.width, canvas.height);
@@ -614,13 +621,6 @@ body{
         const ctx = canvas.getContext('2d');
         const PLAYER_W = 50, PLAYER_H = 40;
         
-        // === Boss Attack Config ===
-        const RAINBOW_INVERT_MS = 6000;   // レインボー被弾で操作反転する秒数（ms）
-        const BOSS_SHADOW_RATE   = 10;    // シャドーボール 1秒あたり発射数
-        const BOSS_SHADOW_TIME   = 5000;  // シャドーボール 5秒
-        const BOSS_WAVE_TIME     = 5000;  // 波状攻撃 5秒（毎秒10発をリングで）
-        const BOSS_REST3         = 3000;  // 休憩 3秒
-        const BOSS_REST5         = 5000;  // 休憩 5秒
 
         // 操作反転ユーティリティ
         function isControlsInverted(){
@@ -1533,82 +1533,6 @@ function drawWordCard(vocab, centerX, top, cardW = 160, cardH = 110) {
   ctx.restore();
 }
 
-// === Canvas: Black Wolf (boss) =========================================
-function drawBlackWolf(ctx, cx, cy, w=56, h=56, t=0){
-  ctx.save();
-  ctx.translate(cx, cy);
-  ctx.scale(w/120, h/120);        // 基準 120x120
-  ctx.lineJoin = 'round'; ctx.lineCap = 'round';
-
-  const blink = 0.8 + 0.2*Math.abs(Math.sin(t*2.0));
-  const earWig = Math.sin(t*3.2)*3;
-
-  // 顔ベース（黒〜グレイ）
-  let g = ctx.createRadialGradient(0,-6,8, 0,10,66);
-  g.addColorStop(0,'#3c3c3c'); g.addColorStop(0.5,'#1e1e1e'); g.addColorStop(1,'#000');
-  ctx.fillStyle = g;
-  ctx.beginPath(); ctx.ellipse(0, 8, 56, 50, 0, 0, Math.PI*2); ctx.fill();
-
-  // 耳（外）
-  ctx.fillStyle = '#2a2a2a';
-  ctx.beginPath();
-  ctx.moveTo(-42,-2); ctx.quadraticCurveTo(-64,-30+earWig, -30,-40+earWig);
-  ctx.quadraticCurveTo(-22,-24+earWig, -28,-10+earWig); ctx.closePath(); ctx.fill();
-  ctx.beginPath();
-  ctx.moveTo( 42,-2); ctx.quadraticCurveTo( 64,-30-earWig,  30,-40-earWig);
-  ctx.quadraticCurveTo( 22,-24-earWig,  28,-10-earWig); ctx.closePath(); ctx.fill();
-
-  // 耳（内）
-  ctx.fillStyle = '#555';
-  ctx.beginPath();
-  ctx.moveTo(-34,-8); ctx.quadraticCurveTo(-50,-28+earWig, -26,-32+earWig);
-  ctx.quadraticCurveTo(-18,-22+earWig, -22,-12+earWig); ctx.closePath(); ctx.fill();
-  ctx.beginPath();
-  ctx.moveTo(34,-8); ctx.quadraticCurveTo(50,-28-earWig, 26,-32-earWig);
-  ctx.quadraticCurveTo(18,-22-earWig, 22,-12-earWig); ctx.closePath(); ctx.fill();
-
-  // ほほの毛束（明るめ）
-  ctx.fillStyle = '#bfbfbf';
-  ctx.beginPath(); ctx.ellipse(-22, 20, 20, 14, 0, 0, Math.PI*2); ctx.fill();
-  ctx.beginPath(); ctx.ellipse( 22, 20, 20, 14, 0, 0, Math.PI*2); ctx.fill();
-
-  // マズル（灰白）
-  ctx.fillStyle = '#e6e6e6';
-  ctx.beginPath();
-  ctx.moveTo(-30, 26); ctx.quadraticCurveTo(0, 8, 30, 26);
-  ctx.quadraticCurveTo(12, 38, 0, 38);
-  ctx.quadraticCurveTo(-12, 38, -30, 26); ctx.closePath(); ctx.fill();
-
-  // 目（鋭い赤）
-  const eye = (ex)=>{
-    ctx.save(); ctx.translate(ex, 0); ctx.scale(1, blink);
-    ctx.fillStyle = '#fff';
-    ctx.beginPath(); ctx.ellipse(0, 0, 16, 11, 0, 0, Math.PI*2); ctx.fill();
-    let ig = ctx.createRadialGradient(-3,-2,2, 0,0,12);
-    ig.addColorStop(0,'#ff8080'); ig.addColorStop(1,'#5a0000');
-    ctx.fillStyle = ig; ctx.beginPath(); ctx.ellipse(0, 0, 9, 7.5, 0, 0, Math.PI*2); ctx.fill();
-    ctx.fillStyle = '#111'; ctx.beginPath(); ctx.arc(0,0,4.2,0,Math.PI*2); ctx.fill();
-    ctx.fillStyle = '#fff'; ctx.beginPath(); ctx.arc(-2,-2,1.6,0,Math.PI*2); ctx.fill();
-    ctx.restore();
-  };
-  eye(-18); eye(18);
-
-  // 鼻・口
-  ctx.fillStyle = '#151515'; ctx.beginPath(); ctx.arc(0, 26, 4.6, 0, Math.PI*2); ctx.fill();
-  ctx.strokeStyle = '#222'; ctx.lineWidth = 3;
-  ctx.beginPath(); ctx.moveTo(-6, 30); ctx.quadraticCurveTo(0, 36, 6, 30); ctx.stroke();
-
-  // 襟足（とげ）
-  ctx.strokeStyle = '#555'; ctx.lineWidth = 2;
-  for(let i=0;i<6;i++){
-    const a = (-Math.PI/2) + (i-3)*0.18;
-    ctx.beginPath(); ctx.moveTo(0, 48);
-    ctx.lineTo(Math.cos(a)*26, 48 + Math.sin(a)*14);
-    ctx.stroke();
-  }
-  ctx.restore();
-}
-
 
     // ボス
     // ★★★ ここから Boss を全置換 ★★★
@@ -1635,14 +1559,16 @@ class Boss {
 
     this.phaseIndex = 0;
     this.phases = [
-      {type:'shadow',   duration: BOSS_SHADOW_TIME},
-      {type:'rest',     duration: BOSS_REST3},
-      {type:'waves',    duration: BOSS_WAVE_TIME},
-      {type:'rainbow',  duration: 5000},
-      {type:'rest',     duration: BOSS_REST3},
-      {type:'ring360',  duration: 1000},
-      {type:'rest',     duration: BOSS_REST5},
-    ];
+  { type:'rainbow', duration: 5000 },       // 1. レインボー光線（1発出す）
+  { type:'rest',    duration: BOSS_REST5 }, // 2. 休憩 5秒
+  { type:'shadow',  duration: BOSS_SHADOW_TIME }, // 3. シャドー 3発/秒 × 5秒
+  { type:'rest',    duration: BOSS_REST5 }, // 4. 休憩 5秒
+  { type:'waves',   duration: BOSS_WAVE_TIME },   // 5. 波状：毎秒10発 × 5秒
+  { type:'rest',    duration: BOSS_REST5 }, // 6. 休憩 5秒
+  { type:'ring360', duration: 1000 },       // 7. 360°ミサイル（同時5方向、1秒）
+  { type:'rest',    duration: BOSS_REST5 }, // 8. 休憩 5秒 → 先頭へ
+];
+
     this.phaseStart = performance.now();
     this._onEnterPhase(this.phases[0].type, this.phaseStart);
 
@@ -1652,42 +1578,51 @@ class Boss {
     this.lastMoveChange = 0;
     this.moveTarget = {x:this.x, y:this.y};
   }
+  
 
   _onEnterPhase(type, now){
-    if (type === 'shadow'){
-      this.shadowInterval = (1000 / BOSS_SHADOW_RATE) / FIRE_RATE; // 10発/秒
-      this.nextShadowTime = now;
-    } else if (type === 'waves'){
-      this.nextWaveTime = now;     // 毎秒リング
-      this.waveInterval = 1000 / FIRE_RATE;
-    } else if (type === 'rainbow'){
-      // 追尾弾を1発だけ生成
+  if (type === 'shadow'){
+    // ★ 3発/秒
+    this.shadowInterval = (1000 / BOSS_SHADOW_RATE) / FIRE_RATE;
+    this.nextShadowTime = now;
+
+  } else if (type === 'waves'){
+    // 毎秒リング（10発）を5秒間
+    this.nextWaveTime = now;
+    this.waveInterval = 1000 / FIRE_RATE;
+
+  } else if (type === 'rainbow'){
+    // ★ すでにレインボー弾が無ければ1発だけ生成（ヒットするまで存続）
+    const hasOne = gameState.bossBeams.some(b => b.type === 'rainbow');
+    if (!hasOne){
       const cx = this.x + this.width/2, cy = this.y + this.height/2;
       gameState.bossBeams.push({
         type:'rainbow', x:cx, y:cy, r:12,
-        vx: 0, vy: 0,
-        seek:{ strength: 0.12 * SPEED_MULT, maxSpeed: 6 * SPEED_MULT },
+        vx:0, vy:0,
+        // しっかり追尾（“ずっと追跡”）：必要なら strength を微調整
+        seek:{ strength: 0.14 * SPEED_MULT, maxSpeed: 6 * SPEED_MULT },
         hue0: Math.floor(Math.random()*360)
       });
-    } else if (type === 'ring360'){
-      // 同時に5方向（72度間隔）
-      const cx = this.x + this.width/2, cy = this.y + this.height/2;
-      for (let i=0;i<5;i++){
-        const ang = (i/5) * Math.PI*2;
-        const spd = 7 * SPEED_MULT;
-        gameState.bossBeams.push({
-          type:'ring', x:cx, y:cy, r:8,
-          vx: Math.cos(ang)*spd, vy: Math.sin(ang)*spd
-        });
-      }
+    }
+
+  } else if (type === 'ring360'){
+    // 360°同時に5方向（1回）＝「1秒間に5発」のイメージ
+    const cx = this.x + this.width/2, cy = this.y + this.height/2;
+    for (let i=0;i<5;i++){
+      const ang = (i/5) * Math.PI*2;
+      const spd = 7 * SPEED_MULT;
+      gameState.bossBeams.push({
+        type:'ring', x:cx, y:cy, r:8,
+        vx: Math.cos(ang)*spd, vy: Math.sin(ang)*spd
+      });
     }
   }
-  _onExitPhase(type){
-    if (type === 'rainbow'){
-      // レインボー弾を掃除（次フェーズへ持ち越さない）
-      gameState.bossBeams = gameState.bossBeams.filter(b => b.type !== 'rainbow');
-    }
-  }
+}
+
+_onExitPhase(type){
+  // ★ レインボー弾は“ヒットするまで残す”ので、ここでは何もしない
+  // if (type === 'rainbow'){ ... } ← この掃除処理は削除
+}
 
   _fireShadowBall(){
     const cx = this.x + this.width/2, cy = this.y + this.height/2;
@@ -2970,17 +2905,6 @@ answerButtons.forEach(btn => {
 })();
 </script>
 
-<script>
-const BG_URL = @json(asset('images/ookamichan-bg.png'));
-const bgImg = new Image();
-bgImg.src = BG_URL;
-let bgReady = false;
-bgImg.onload = () => bgReady = true;
-
-function drawBackground(){
-  if (bgReady) ctx.drawImage(bgImg, 0, 0, canvas.width, canvas.height);
-}
-</script>
 
 
 </body>
