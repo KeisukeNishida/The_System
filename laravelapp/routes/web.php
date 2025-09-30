@@ -107,3 +107,5 @@ Route::get('/home03', 'HomePageController@home03')->name('Home.home03');
 Route::get('/home04', 'HomePageController@home04')->name('Home.home04');
 
 Route::get('/home05', 'HomePageController@home05')->name('Home.home05');
+
+Route::get('/home06', 'HomePageController@home06')->name('Home.home06');

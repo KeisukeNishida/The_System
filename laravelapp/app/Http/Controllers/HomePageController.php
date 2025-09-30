@@ -32,4 +32,9 @@ class HomePageController extends Controller
     {
         return view('HomePage.home05'); // resources/views/HomePage/homepage05.blade.php
     }   
+
+    public function home06()
+    {
+        return view('HomePage.home06'); // resources/views/HomePage/homepage06.blade.php
+    }
 }
