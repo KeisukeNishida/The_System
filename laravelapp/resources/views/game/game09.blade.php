@@ -648,7 +648,7 @@ bgImg.onload = () => bgReady = true;
 
         // ゲーム状態
         let gameState = {
-            life: 5,
+            life: 10,
             score: 0,
             gameRunning: true,
             enemies: [],
@@ -3007,7 +3007,7 @@ function updatePlayer(){
         });
         // ② 状態を初期化（bossCleared は1回だけ定義）
         gameState = {
-            life: 5,
+            life: 10,
             score: 0,
             gameRunning: true,
             enemies: [],

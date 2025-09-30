@@ -97,3 +97,13 @@ Route::get('/game07', 'GameController@game07')->name('Game.game07');
 Route::get('/game08', 'GameController@game08')->name('Game.game08');
 
 Route::get('/game09', 'GameController@game09')->name('Game.game09');
+
+Route::get('/game10', 'GameController@game10')->name('Game.game10');
+
+Route::get('/game11', 'GameController@game11')->name('Game.game11');
+
+Route::get('/home03', 'HomePageController@home03')->name('Home.home03');
+
+Route::get('/home04', 'HomePageController@home04')->name('Home.home04');
+
+Route::get('/home05', 'HomePageController@home05')->name('Home.home05');
