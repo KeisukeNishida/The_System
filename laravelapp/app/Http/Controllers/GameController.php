@@ -56,6 +56,11 @@ class GameController extends Controller
     {
         return view('game.game10'); // resources/views/game/game08.blade.php
     }
+
+    public function game11()
+    {
+        return view('game.game11'); // resources/views/game/game08.blade.php
+    }
     
 
 }
